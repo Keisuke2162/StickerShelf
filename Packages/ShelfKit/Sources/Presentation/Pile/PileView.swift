@@ -1,15 +1,13 @@
 #if canImport(UIKit)
 import SwiftUI
-import SpriteKit
 import Domain
 
 public struct PileView: View {
     private let container: PresentationContainer
     private let router: Router
     @State private var viewModel: PileViewModel
-    @State private var scene: PileScene?
-    @State private var sceneSize: CGSize = .zero
     @State private var longPressTarget: BookID?
+    @State private var pileItems: [PileDynamicsView.Item] = []
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -23,13 +21,13 @@ public struct PileView: View {
             SegmentedSwitch(
                 options: [
                     .init(id: Router.BoardMode.shelf, title: "本棚"),
-                    .init(id: Router.BoardMode.pile, title: "積読", badge: viewModel.books.count > 0 ? viewModel.books.count : nil)
+                    .init(id: Router.BoardMode.pile, title: "積読", badge: viewModel.books.count)
                 ],
                 selection: Binding(get: { router.boardMode }, set: { router.boardMode = $0 })
             )
             stats
             if viewModel.display == .pile {
-                pileScene
+                pileBoard
             } else {
                 listView
             }
@@ -41,6 +39,9 @@ public struct PileView: View {
         .task { await viewModel.reload() }
         .task(id: router.boardMode) {
             if router.boardMode == .pile { await viewModel.start() }
+        }
+        .task(id: viewModel.books) {
+            await refreshItems()
         }
         .confirmationDialog(
             "この本をどうしますか？",
@@ -93,24 +94,25 @@ public struct PileView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.surface))
     }
 
-    private var pileScene: some View {
-        GeometryReader { geo in
-            let readyScene = sceneReady(preferredSize: geo.size)
-            ZStack(alignment: .top) {
-                SpriteView(scene: readyScene, options: [.allowsTransparency])
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.pileBackground))
-                    .onChange(of: geo.size) { _, newSize in
-                        if newSize != .zero { readyScene.size = newSize }
-                    }
-                    .onChange(of: viewModel.books) { _, _ in
-                        updateScene(readyScene, initial: false)
-                    }
-                    .task {
-                        // 初回表示時に 1 回だけ順次落下を実行
-                        updateScene(readyScene, initial: true)
-                    }
+    private var pileBoard: some View {
+        ZStack(alignment: .top) {
+            // 方眼 + 床
+            PileBackground()
+                .clipShape(RoundedRectangle(cornerRadius: 14))
 
+            PileDynamicsView(
+                items: pileItems,
+                onTap: { id in router.detailBookID = id },
+                onLongPress: { id in longPressTarget = id }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+
+            if pileItems.isEmpty && !viewModel.isLoading {
+                Text("積読の本がありません。＋ボタンから追加してください。")
+                    .font(FontToken.bodyRegular())
+                    .foregroundStyle(ColorToken.inkSecondary)
+                    .padding(.top, 40)
+            } else {
                 Text("長押しで「読み始める」→ 本棚に貼られます")
                     .font(FontToken.caption())
                     .foregroundStyle(ColorToken.ink)
@@ -119,47 +121,19 @@ public struct PileView: View {
                     .padding(.top, 8)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// シーンは View のライフタイム中に 1 回だけ生成し、以降はサイズだけ追従する。
-    /// `.resizeFill` でも scene.size は自動更新されないため、サイズ変更は呼び出し側で設定する。
-    /// body 中に @State を書くので DispatchQueue.main.async で次フレームへ繰り延べる。
-    private func sceneReady(preferredSize: CGSize) -> PileScene {
-        if let existing = scene {
-            if preferredSize != .zero, existing.size != preferredSize {
-                existing.size = preferredSize
-            }
-            return existing
-        }
-        let initial = preferredSize == .zero ? CGSize(width: 390, height: 500) : preferredSize
-        let s = PileScene(size: initial)
-        s.scaleMode = .resizeFill
-        s.onTap = { id in router.detailBookID = id }
-        s.onLongPress = { id in longPressTarget = id }
-        DispatchQueue.main.async { scene = s }
-        return s
-    }
-
-    private func updateScene(_ scene: PileScene, initial: Bool) {
-        Task {
-            let items: [PileScene.Item] = await mapToItems(viewModel.books)
-            await MainActor.run {
-                scene.update(items: items, initial: initial)
-            }
-        }
-    }
-
-    private func mapToItems(_ books: [Book]) async -> [PileScene.Item] {
-        var out: [PileScene.Item] = []
-        out.reserveCapacity(books.count)
-        for book in books {
-            // 向きは BookID から決定的に導出（Notion 01「縦:横 = 6:4」、reload で入れ替わらない）
+    private func refreshItems() async {
+        var out: [PileDynamicsView.Item] = []
+        out.reserveCapacity(viewModel.books.count)
+        for book in viewModel.books {
             let firstByte = book.id.rawValue.uuid.0
-            let orientation: PileScene.Orientation = (firstByte % 10) < 6 ? .vertical : .horizontal
+            let isVertical = (firstByte % 10) < 6
             let data = (try? await container.coverImages.imageData(for: book.cover)) ?? nil
-            out.append(.init(id: book.id, title: book.metadata.title, orientation: orientation, image: data.map(PileScene.SendableImageData.init)))
+            out.append(.init(id: book.id, title: book.metadata.title, isVertical: isVertical, imageData: data))
         }
-        return out
+        pileItems = out
     }
 
     private var listView: some View {
@@ -203,6 +177,36 @@ public struct PileView: View {
                 }
             }
         }
+    }
+}
+
+/// 積読ボードの背景：pileBackground 地 + 26pt 間隔の方眼 + 床 4pt
+private struct PileBackground: View {
+    var body: some View {
+        Canvas { context, size in
+            // 背景
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(ColorToken.pileBackground)))
+            // 方眼線（1pt、26pt 間隔、pileGrid）
+            let grid = Color(ColorToken.pileGrid)
+            var path = Path()
+            var x: CGFloat = 0
+            while x < size.width {
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: size.height))
+                x += 26
+            }
+            var y: CGFloat = 0
+            while y < size.height {
+                path.move(to: CGPoint(x: 0, y: y))
+                path.addLine(to: CGPoint(x: size.width, y: y))
+                y += 26
+            }
+            context.stroke(path, with: .color(grid), lineWidth: 1)
+            // 床 (4pt, pileFloor)
+            let floorRect = CGRect(x: 0, y: size.height - 4, width: size.width, height: 4)
+            context.fill(Path(floorRect), with: .color(Color(ColorToken.pileFloor)))
+        }
+        .allowsHitTesting(false)
     }
 }
 
