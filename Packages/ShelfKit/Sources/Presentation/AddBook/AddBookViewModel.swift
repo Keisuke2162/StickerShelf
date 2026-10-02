@@ -37,7 +37,12 @@ public final class AddBookViewModel {
 
     public func onKeywordChanged() {
         searchTask?.cancel()
-        let keyword = self.keyword
+        let keyword = self.keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !keyword.isEmpty else {
+            results = []
+            selectedCatalog = nil
+            return
+        }
         searchTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 400_000_000)
             if Task.isCancelled { return }
@@ -52,7 +57,7 @@ public final class AddBookViewModel {
             let out = try await container.searchCatalog.execute(keyword: keyword, page: 0)
             results = out.items
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
             results = []
         }
     }
@@ -77,7 +82,7 @@ public final class AddBookViewModel {
             addedBook = book
             return book
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
             return nil
         }
     }
@@ -91,7 +96,7 @@ public final class AddBookViewModel {
             addedBook = book
             return book
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
             return nil
         }
     }

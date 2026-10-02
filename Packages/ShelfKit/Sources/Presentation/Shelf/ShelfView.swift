@@ -36,6 +36,16 @@ public struct ShelfView: View {
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
             Spacer()
+            Button {
+                Task { await viewModel.reload() }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(ColorToken.surface))
+                    .foregroundStyle(ColorToken.ink)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("再読み込み")
         }
     }
 
@@ -43,7 +53,7 @@ public struct ShelfView: View {
         SegmentedSwitch(
             options: [
                 .init(id: Router.BoardMode.shelf, title: "本棚 \(viewModel.countReading + viewModel.countFinished)"),
-                .init(id: Router.BoardMode.pile, title: "積読", badge: viewModel.countUnread > 0 ? viewModel.countUnread : nil)
+                .init(id: Router.BoardMode.pile, title: "積読", badge: viewModel.countUnread) // Notion 02「常時表示」
             ],
             selection: Binding(
                 get: { router.boardMode },
@@ -75,7 +85,8 @@ public struct ShelfView: View {
                     }
                 }
 
-                ForEach(viewModel.books.sorted(by: { ($0.sticker?.zIndex ?? 0) < ($1.sticker?.zIndex ?? 0) })) { book in
+                // VM の books は既に zIndex 昇順でソート済み（FetchShelfUseCase 側で保証）
+                ForEach(viewModel.books) { book in
                     if let placement = book.sticker {
                         StickerDraggable(
                             book: book,
@@ -91,7 +102,6 @@ public struct ShelfView: View {
             }
             .clipped()
         }
-        .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.boardBackground))
     }
 }
 

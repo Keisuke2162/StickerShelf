@@ -9,6 +9,7 @@ public struct PileView: View {
     @State private var viewModel: PileViewModel
     @State private var scene: PileScene?
     @State private var sceneSize: CGSize = .zero
+    @State private var longPressTarget: BookID?
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -40,6 +41,18 @@ public struct PileView: View {
         .task { await viewModel.reload() }
         .task(id: router.boardMode) {
             if router.boardMode == .pile { await viewModel.start() }
+        }
+        .confirmationDialog(
+            "この本をどうしますか？",
+            isPresented: Binding(get: { longPressTarget != nil }, set: { if !$0 { longPressTarget = nil } }),
+            titleVisibility: .visible
+        ) {
+            if let id = longPressTarget {
+                Button("読み始める") { Task { await viewModel.startReading(id: id); longPressTarget = nil } }
+                Button("読んだことにする") { Task { await viewModel.markFinished(id: id); longPressTarget = nil } }
+                Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: id); longPressTarget = nil } }
+                Button("キャンセル", role: .cancel) { longPressTarget = nil }
+            }
         }
     }
 
@@ -82,19 +95,28 @@ public struct PileView: View {
 
     private var pileScene: some View {
         GeometryReader { geo in
-            SpriteView(scene: makeScene(size: geo.size), options: [.allowsTransparency])
-                .frame(width: geo.size.width, height: geo.size.height)
-                .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.pileBackground))
-                .onChange(of: geo.size) { _, newSize in
-                    scene?.size = newSize
-                    sceneSize = newSize
-                }
-                .onChange(of: viewModel.books) { _, _ in
-                    updateScene()
-                }
-                .task {
-                    updateScene(initial: true)
-                }
+            ZStack(alignment: .top) {
+                SpriteView(scene: makeScene(size: geo.size), options: [.allowsTransparency])
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.pileBackground))
+                    .onChange(of: geo.size) { _, newSize in
+                        scene?.size = newSize
+                        sceneSize = newSize
+                    }
+                    .onChange(of: viewModel.books) { _, _ in
+                        updateScene()
+                    }
+                    .task {
+                        updateScene(initial: true)
+                    }
+
+                Text("長押しで「読み始める」→ 本棚に貼られます")
+                    .font(FontToken.caption())
+                    .foregroundStyle(ColorToken.ink)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Capsule().fill(ColorToken.ink.opacity(0.08)))
+                    .padding(.top, 8)
+            }
         }
     }
 
@@ -103,7 +125,7 @@ public struct PileView: View {
         let s = PileScene(size: size == .zero ? CGSize(width: 300, height: 500) : size)
         s.scaleMode = .resizeFill
         s.onTap = { id in router.detailBookID = id }
-        s.onLongPress = { _ in }
+        s.onLongPress = { id in longPressTarget = id }
         scene = s
         sceneSize = s.size
         return s
@@ -123,7 +145,9 @@ public struct PileView: View {
         var out: [PileScene.Item] = []
         out.reserveCapacity(books.count)
         for book in books {
-            let orientation: PileScene.Orientation = Int.random(in: 0..<10) < 6 ? .vertical : .horizontal
+            // 向きは BookID から決定的に導出（Notion 01「縦:横 = 6:4」、reload で入れ替わらない）
+            let firstByte = book.id.rawValue.uuid.0
+            let orientation: PileScene.Orientation = (firstByte % 10) < 6 ? .vertical : .horizontal
             let data = (try? await container.coverImages.imageData(for: book.cover)) ?? nil
             out.append(.init(id: book.id, title: book.metadata.title, orientation: orientation, image: data.map(PileScene.SendableImageData.init)))
         }

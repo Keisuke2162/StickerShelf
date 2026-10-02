@@ -10,7 +10,7 @@ public struct GeneratedCoverView: View {
 
     public var body: some View {
         GeometryReader { geo in
-            let color = Self.palette[abs(title.hashValue) % Self.palette.count]
+            let color = Self.palette[Self.stableIndex(for: title) % Self.palette.count]
             ZStack(alignment: .bottomLeading) {
                 color
                 Text(title)
@@ -37,6 +37,16 @@ public struct GeneratedCoverView: View {
         let components = color.rgbComponents()
         let luminance = 0.2126 * components.r + 0.7152 * components.g + 0.0722 * components.b
         return luminance > 0.6 ? ColorToken.ink : .white
+    }
+
+    /// タイトル文字列の UTF-8 バイトから決定的なインデックスを返す。
+    /// Swift の `hashValue` は実行ごとに seed が変わるため使えない。
+    static func stableIndex(for title: String) -> Int {
+        var hash: UInt64 = 5381
+        for byte in title.utf8 {
+            hash = (hash &* 33) &+ UInt64(byte)
+        }
+        return Int(hash % UInt64(palette.count))
     }
 }
 

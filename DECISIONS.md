@@ -22,3 +22,7 @@
 - 2026-10-02: `LoadAPIKeyStatusUseCase` の戻り値は `APIKeyStatus { case notSet; case set(masked: String) }`。生 APIKey は Application 層の外（Presentation / 設定画面）には出さない。
 - 2026-10-02: 書影差し替えは `UpdateBookDetailUseCase` に合流させず、`ReplaceCoverImageUseCase` を独立で持つ。詳細モーダルの「保存」はドラフトのみを扱い、書影差し替えは別ボタン（即時反映）。
 - 2026-10-02: `BringStickerToFrontUseCase` の 10,000 超え詰め直しは、target 以外を `addedAt` 昇順で 1..n に、target を n+1 に。target は z 順の連続性より最前面を優先する。
+- 2026-10-02: 積読の書影向き（縦/横 = 6:4）は `BookID.rawValue.uuid.0 % 10 < 6` で決定論的に導出。reload 毎に向きが変わらない。
+- 2026-10-02: `GeneratedCoverView` の背景色は `title.utf8` を DJB2 ハッシュした決定論的インデックスで選ぶ。`title.hashValue` は実行ごとに seed が変わるため不可。
+- 2026-10-02: AppContainer の `-SeedSampleData` フラグはサンプル追加投入のみに使い、永続ストアの On/Off とは切り離す（永続化は常に有効）。
+- 2026-10-02: Presentation 層の全 ViewModel は `DomainErrorMessage.describe(_:)` 経由でユーザー向け文言に正規化してから `errorMessage` に代入する。

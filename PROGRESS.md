@@ -103,3 +103,41 @@ STATUS: IN_PROGRESS
 - [x] [medium] FetchPileUseCase を `fetch(status: [.unread])` に変える（当月増加数は全件集計のため分離）。
 - [x] [medium] AddBook/UpdateBookDetail/ChangeReadingStatus で `fetch(status:[.reading,.finished])` を 3 回呼ぶのを BookRepository.maxShelfZIndex() を導入して一回に。
 
+### Phase 4 (ui-reviewer, 2026-10-02)
+- [x] [high] PreviewContainer の NSLock を actor 化してビルドブロッカーを解消（既に修正済み）。
+- [x] [high] CustomTabBar の HStack を均等 4 列（ボード/カレンダー/Spacer/設定）に、＋ボタンの中央位置を厳密に合わせる。
+- [x] [high] PileScene に床ライン（高さ 4pt, pileFloor）と方眼線（1pt, 26pt 間隔, pileGrid）を描画。
+- [x] [high] 積読画面の上部中央に案内ピル「長押しで「読み始める」→ 本棚に貼られます」を追加。
+- [x] [high] BookDetailSheet の下部ボタンを `.safeAreaInset(edge:.bottom)` で固定（ScrollView で流れないように）。
+- [x] [high] 本棚ヘッダー右端に 44pt 丸ボタン（surface 背景）を追加。
+- [x] [medium] カレンダー書影スタック 2 枚目を右上に offset、角度を仕様の範囲でランダム化。
+- [x] [medium] 詳細モーダルのステータスセグメントを segmentTrack 地の枠つきに。
+- [x] [medium] 詳細モーダルの日付セル「未設定」→「設定」ボタン＋設定済みのみクリア× のパターンに。
+- [x] [medium] AddBookView 下部主要ボタンを `.safeAreaInset(edge:.bottom)` で固定。
+- [x] [medium] SettingsView の Form 背景を boardBackground にして行背景を surface に。
+- [x] [medium] 本棚ボードの内側 RoundedRectangle を外す（二重塗り回避）。
+
+### Phase 4 (spec-reviewer, 2026-10-02)
+- [x] [high] AppContainer の `isStoredInMemoryOnly: seedSampleData` を切り離し、`-SeedSampleData` は空ストアに追加投入する運用に変更。
+- [x] [high] StickerDraggable のピンチ・回転が最新ドラッグ位置を保持しないバグ（placement の位置部分も最新値ベースで合成）。
+- [x] [high] ステッカーに触れた瞬間に bringToFront を呼ぶ（タップだけでなくドラッグ/ピンチ/回転でも最前面化）。
+- [x] [high] BookDetailSheet で保存失敗時に DomainError をユーザー文言に変換して alert 表示（期間不整合/ページ超過/本が見つからない）。
+- [x] [high] RootView のタブバー分の余白を Safe Area 考慮に（.safeAreaInset で挿入）。
+- [x] [high] PileScene に長押しメニュー（UILongPressGestureRecognizer）を追加し「読み始める／読んだことにする／削除」を提供。
+- [x] [high] PileScene の初期表示を addedAt 古い順に 0.08s 間隔で順次 addChild する実装に。
+- [x] [high] 書影の向き（縦/横）を Book.id から決定的に導出して reload で入れ替わらないように。
+- [x] [high] CalendarViewModel 内で `firstWeekday = 1` の Calendar を保証（システム設定に依存しない）。
+- [x] [high] BookDetailSheet の Binding.unwrapOptional の不整合挙動を見直し、draft を non-optional 初期値で持つ。
+- [x] [medium] ShelfView のセグメント積読バッジを常時表示（0 でも表示）。
+- [x] [medium] AddBook 成功後に `router.boardMode` を unread なら pile、他なら shelf に切替。
+- [x] [medium] GeneratedCoverView の色決定ハッシュを decimal/UTF-8 ベースの決定的ハッシュに（title.hashValue はシード毎に変わる）。
+- [x] [medium] AddBookViewModel.lookupISBN を FindCatalogBookByISBN 直接呼び出しに（登録済み判定も実行）。
+- [x] [medium] Preview 用の `PresentationContainer.preview` ファクトリと主要 ViewModel テスト（Shelf/Pile/BookDetail/Settings/AddBook）を追加。
+- [x] [medium] DomainError → ユーザー文言の `ErrorMessage` マッパーを Presentation に導入し各 ViewModel で経由。
+- [x] [medium] AddBookViewModel の空キーワード時 search 発火を抑止。
+- [x] [medium] ManualEntryView の ISBN 不正時はボタン disable+表示。
+- [x] [medium] LicenseView に OFL 全文を表示（または同梱）。
+- [x] [medium] ShelfView の books ソートを reload 内で済ませる（毎フレームソート防止）。
+- [x] [medium] PileScene の `.random(in:40...size.width-40)` の下限ガード。
+- [x] [medium] StickerDraggable の Reduce Motion 判定でハプティクスも抑制。
+

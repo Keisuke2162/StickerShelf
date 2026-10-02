@@ -42,12 +42,18 @@ public struct BookDetailSheet: View {
                 memoSection(draft: draft)
                 edgePicker(draft: draft)
                 coverReplace()
-                bottomButtons()
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
+            .padding(.bottom, 12)
         }
         .background(ColorToken.boardBackground.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom) {
+            bottomButtons()
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(ColorToken.boardBackground)
+        }
         .alert("この本を削除しますか？", isPresented: $showDeleteConfirm) {
             Button("削除", role: .destructive) {
                 Task {
@@ -63,6 +69,15 @@ public struct BookDetailSheet: View {
                 }
             }
         }
+        .alert(
+            "保存に失敗しました",
+            isPresented: Binding(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
+            ),
+            actions: { Button("OK", role: .cancel) {} },
+            message: { Text(viewModel.errorMessage ?? "") }
+        )
     }
 
     private func headerRow(book: Book) -> some View {
@@ -108,11 +123,13 @@ public struct BookDetailSheet: View {
                         .font(FontToken.sectionTitle())
                         .foregroundStyle(draft.wrappedValue.status == status ? .white : ColorToken.inkSecondary)
                         .frame(maxWidth: .infinity).frame(height: 40)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(draft.wrappedValue.status == status ? ColorToken.accent : ColorToken.surface))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(draft.wrappedValue.status == status ? ColorToken.accent : .clear))
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.segmentTrack))
     }
 
     private func statusLabel(_ status: ReadingStatus) -> String {
@@ -159,20 +176,23 @@ public struct BookDetailSheet: View {
     private func dateCell(title: String, date: Binding<Date?>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-            HStack {
+            HStack(spacing: 6) {
                 if let bound = date.wrappedValue {
                     DatePicker("", selection: Binding(get: { bound }, set: { date.wrappedValue = $0 }), displayedComponents: .date)
                         .labelsHidden()
+                    Spacer()
                     Button(action: { date.wrappedValue = nil }) {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(ColorToken.inkTertiary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("日付をクリア")
                 } else {
-                    Button("未設定") { date.wrappedValue = Date() }
+                    Text("未設定").foregroundStyle(ColorToken.inkTertiary)
+                    Spacer()
+                    Button("設定") { date.wrappedValue = Date() }
                         .buttonStyle(.plain)
-                        .foregroundStyle(ColorToken.inkTertiary)
+                        .foregroundStyle(ColorToken.accent)
                 }
-                Spacer()
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1.5))

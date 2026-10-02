@@ -16,6 +16,14 @@ public struct ManualEntryView: View {
         self.onSubmit = onSubmit
     }
 
+    private var isbnValid: Bool {
+        isbnText.trimmingCharacters(in: .whitespaces).isEmpty || ISBN(isbnText) != nil
+    }
+
+    private var titleValid: Bool {
+        !title.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     public var body: some View {
         NavigationStack {
             Form {
@@ -25,6 +33,9 @@ public struct ManualEntryView: View {
                     TextField("出版社", text: $publisher)
                     TextField("ページ数", text: $pageCount).keyboardType(.numberPad)
                     TextField("ISBN", text: $isbnText).keyboardType(.numberPad)
+                    if !isbnValid {
+                        Text("ISBN の形式が正しくありません").font(FontToken.caption()).foregroundStyle(ColorToken.sunday)
+                    }
                 }
             }
             .navigationTitle("手動で登録")
@@ -44,7 +55,7 @@ public struct ManualEntryView: View {
                         )
                         onSubmit(entry)
                     }
-                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(!titleValid || !isbnValid)
                 }
             }
         }

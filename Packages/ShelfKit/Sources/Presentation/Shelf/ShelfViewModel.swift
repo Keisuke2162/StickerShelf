@@ -55,25 +55,25 @@ public final class ShelfViewModel {
             countUnread = pile.books.count
             for id in newIDs { popAnimationIDs.insert(id) }
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 
     public func didTouchSticker(id: BookID) async {
-        do { try await container.bringToFront.execute(id: id) } catch { errorMessage = String(describing: error) }
+        do { try await container.bringToFront.execute(id: id) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 
     public func didEndGesture(id: BookID, placement: StickerPlacement) async {
         pendingPlacement.removeValue(forKey: id)
-        do { try await container.moveSticker.execute(id: id, placement: placement) } catch { errorMessage = String(describing: error) }
+        do { try await container.moveSticker.execute(id: id, placement: placement) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 
     public func returnToPile(id: BookID) async {
-        do { _ = try await container.changeStatus.execute(id: id, newStatus: .unread, now: Date()) } catch { errorMessage = String(describing: error) }
+        do { _ = try await container.changeStatus.execute(id: id, newStatus: .unread, now: Date()) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 
     public func deleteBook(id: BookID) async {
-        do { try await container.deleteBook.execute(id: id) } catch { errorMessage = String(describing: error) }
+        do { try await container.deleteBook.execute(id: id) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 
     public func clearPopAnimation(id: BookID) {

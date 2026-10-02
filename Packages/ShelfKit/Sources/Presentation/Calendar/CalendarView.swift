@@ -132,18 +132,20 @@ public struct CalendarView: View {
                     .padding(.leading, 6)
                     .padding(.top, 4)
                 Spacer(minLength: 0)
-                HStack(spacing: -8) {
+                ZStack(alignment: .bottomLeading) {
                     ForEach(Array(books.prefix(2).enumerated()), id: \.offset) { idx, book in
                         CoverImageView(cover: book.cover, title: book.metadata.title, loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil })
                             .frame(width: 26, height: 38)
                             .clipShape(RoundedRectangle(cornerRadius: 2))
                             .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white, lineWidth: 2))
-                            .rotationEffect(.degrees(idx == 0 ? -4 : 7))
+                            .rotationEffect(.degrees(idx == 0 ? Double((Int(book.metadata.title.utf8.first ?? 0) % 14) - 6) : 9))
+                            .offset(x: idx == 0 ? 0 : 10, y: idx == 0 ? 0 : -6)
                     }
                     if books.count > 2 {
                         Text("+\(books.count - 2)")
                             .font(FontToken.caption().weight(.bold))
                             .foregroundStyle(ColorToken.inkSecondary)
+                            .offset(x: 30, y: 0)
                     }
                 }
                 .padding(.horizontal, 6)

@@ -14,13 +14,30 @@ struct StickerDraggable: View {
     @GestureState private var magnify: CGFloat = 1
     @GestureState private var rotate: Angle = .zero
     @State private var popScale: CGFloat = 1
+    @State private var hasBroughtToFront = false
 
     private let baseSize = CGSize(width: 62, height: 90)
 
+    /// 現在ジェスチャ中の派生値を含めた最新の placement。
+    private var liveX: Double {
+        guard boardSize.width > 0 else { return placement.x }
+        let base = placement.x * boardSize.width
+        return ((base + dragOffset.width) / boardSize.width).clamped(to: StickerPlacement.xRange)
+    }
+    private var liveY: Double {
+        guard boardSize.height > 0 else { return placement.y }
+        let base = placement.y * boardSize.height
+        return ((base + dragOffset.height) / boardSize.height).clamped(to: StickerPlacement.yRange)
+    }
+    private var liveScale: Double {
+        (placement.scale * magnify).clamped(to: StickerPlacement.scaleRange)
+    }
+    private var liveRotation: Double {
+        (placement.rotationDegrees + rotate.degrees).clamped(to: StickerPlacement.rotationRange)
+    }
+
     var body: some View {
         let center = CGPoint(x: placement.x * boardSize.width, y: placement.y * boardSize.height)
-        let currentScale = (placement.scale * magnify).clamped(to: StickerPlacement.scaleRange)
-        let currentRotation = (placement.rotationDegrees + rotate.degrees).clamped(to: StickerPlacement.rotationRange)
 
         StickerView(
             cover: book.cover,
@@ -29,12 +46,11 @@ struct StickerDraggable: View {
             size: baseSize,
             loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
         )
-        .scaleEffect(currentScale * popScale)
-        .rotationEffect(.degrees(currentRotation))
+        .scaleEffect(liveScale * popScale)
+        .rotationEffect(.degrees(liveRotation))
         .position(x: center.x + dragOffset.width, y: center.y + dragOffset.height)
         .onTapGesture {
             router.detailBookID = book.id
-            Task { await viewModel.didTouchSticker(id: book.id) }
         }
         .contextMenu {
             Button("最前面へ") { Task { await viewModel.didTouchSticker(id: book.id) } }
@@ -42,20 +58,22 @@ struct StickerDraggable: View {
             Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
         }
         .gesture(
-            DragGesture()
+            DragGesture(minimumDistance: 0)
                 .updating($dragOffset) { value, state, _ in
                     state = value.translation
                 }
-                .onEnded { value in
-                    let newCenter = CGPoint(x: center.x + value.translation.width, y: center.y + value.translation.height)
-                    let normalized = StickerPlacement(
-                        x: boardSize.width > 0 ? newCenter.x / boardSize.width : 0,
-                        y: boardSize.height > 0 ? newCenter.y / boardSize.height : 0,
-                        rotationDegrees: currentRotation,
-                        scale: currentScale,
+                .onChanged { _ in
+                    bringToFrontOnce()
+                }
+                .onEnded { _ in
+                    let next = StickerPlacement(
+                        x: liveX, y: liveY,
+                        rotationDegrees: liveRotation,
+                        scale: liveScale,
                         zIndex: placement.zIndex
                     )
-                    Task { await viewModel.didEndGesture(id: book.id, placement: normalized) }
+                    hasBroughtToFront = false
+                    Task { await viewModel.didEndGesture(id: book.id, placement: next) }
                 }
         )
         .simultaneousGesture(
@@ -63,9 +81,15 @@ struct StickerDraggable: View {
                 .updating($magnify) { value, state, _ in
                     state = value.magnification
                 }
-                .onEnded { value in
-                    let scale = (placement.scale * value.magnification).clamped(to: StickerPlacement.scaleRange)
-                    let next = StickerPlacement(x: placement.x, y: placement.y, rotationDegrees: placement.rotationDegrees, scale: scale, zIndex: placement.zIndex)
+                .onChanged { _ in bringToFrontOnce() }
+                .onEnded { _ in
+                    let next = StickerPlacement(
+                        x: liveX, y: liveY,
+                        rotationDegrees: liveRotation,
+                        scale: liveScale,
+                        zIndex: placement.zIndex
+                    )
+                    hasBroughtToFront = false
                     Task { await viewModel.didEndGesture(id: book.id, placement: next) }
                 }
         )
@@ -74,9 +98,15 @@ struct StickerDraggable: View {
                 .updating($rotate) { value, state, _ in
                     state = value.rotation
                 }
-                .onEnded { value in
-                    let deg = (placement.rotationDegrees + value.rotation.degrees).clamped(to: StickerPlacement.rotationRange)
-                    let next = StickerPlacement(x: placement.x, y: placement.y, rotationDegrees: deg, scale: placement.scale, zIndex: placement.zIndex)
+                .onChanged { _ in bringToFrontOnce() }
+                .onEnded { _ in
+                    let next = StickerPlacement(
+                        x: liveX, y: liveY,
+                        rotationDegrees: liveRotation,
+                        scale: liveScale,
+                        zIndex: placement.zIndex
+                    )
+                    hasBroughtToFront = false
                     Task { await viewModel.didEndGesture(id: book.id, placement: next) }
                 }
         )
@@ -90,6 +120,12 @@ struct StickerDraggable: View {
                 viewModel.clearPopAnimation(id: book.id)
             }
         }
+    }
+
+    private func bringToFrontOnce() {
+        guard !hasBroughtToFront else { return }
+        hasBroughtToFront = true
+        Task { await viewModel.didTouchSticker(id: book.id) }
     }
 }
 

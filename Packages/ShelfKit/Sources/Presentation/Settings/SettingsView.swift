@@ -58,6 +58,8 @@ public struct SettingsView: View {
                 }
             }
             .navigationTitle("設定")
+            .scrollContentBackground(.hidden)
+            .background(ColorToken.boardBackground.ignoresSafeArea())
             .task { await viewModel.reload() }
         }
     }

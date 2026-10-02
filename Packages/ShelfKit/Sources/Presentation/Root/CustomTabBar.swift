@@ -15,11 +15,12 @@ struct CustomTabBar: View {
                 )
                 .shadow(color: ColorToken.ink.opacity(0.04), radius: 8, y: -2)
 
+            // 4 列均等グリッド: ボード / カレンダー / (中央 ＋ スロット) / 設定
             HStack(spacing: 0) {
-                tabButton(title: "ボード", icon: "square.on.square", tab: .board)
-                tabButton(title: "カレンダー", icon: "calendar", tab: .calendar)
-                Color.clear.frame(maxWidth: .infinity)
-                tabButton(title: "設定", icon: "gearshape", tab: .settings)
+                tabButton(title: "ボード", icon: "square.on.square", tab: .board).frame(maxWidth: .infinity)
+                tabButton(title: "カレンダー", icon: "calendar", tab: .calendar).frame(maxWidth: .infinity)
+                Color.clear.frame(maxWidth: .infinity).frame(height: 44)
+                tabButton(title: "設定", icon: "gearshape", tab: .settings).frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 12)

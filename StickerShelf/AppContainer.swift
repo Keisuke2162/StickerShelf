@@ -14,12 +14,17 @@ public struct AppContainer: Sendable {
         let options = StartupOptions.parse(from: launchArguments)
 
         let schema = Schema([BookRecord.self])
-        let container: ModelContainer
-        do {
-            container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: options.seedSampleData)])
-        } catch {
-            fatalError("ModelContainer creation failed: \(error)")
-        }
+        // -SeedSampleData は「サンプルを追加投入」のためのフラグで、永続化の挙動とは切り離す。
+        // ModelContainer 失敗時はインメモリにフォールバックして起動クラッシュを回避する。
+        let container: ModelContainer = {
+            if let normal = try? ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)]) {
+                return normal
+            }
+            if let fallback = try? ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]) {
+                return fallback
+            }
+            fatalError("ModelContainer could not be created at all")
+        }()
 
         let bookRepository = SwiftDataBookRepository(modelContainer: container)
 
@@ -41,10 +46,11 @@ public struct AppContainer: Sendable {
         }
 
         let covers: any CoverImageRepository
-        do {
-            covers = try FileCoverImageRepository()
-        } catch {
-            fatalError("FileCoverImageRepository failed: \(error)")
+        if let real = try? FileCoverImageRepository() {
+            covers = real
+        } else {
+            // 書影ディレクトリ作成に失敗したら「書影は表示しない（none のみ）」の縮退モードに
+            covers = NullCoverImageRepository()
         }
 
         let presentation = PresentationContainer(
@@ -76,6 +82,13 @@ public struct AppContainer: Sendable {
         }
         return app
     }
+}
+
+/// FileCoverImageRepository 初期化に失敗したときのダミー。
+struct NullCoverImageRepository: CoverImageRepository {
+    func imageData(for cover: CoverImage) async throws -> Data? { nil }
+    func saveUserImage(_ data: Data) async throws -> CoverImage { .none }
+    func deleteLocal(_ cover: CoverImage) async throws {}
 }
 
 /// Phase 4 以降で UI プレビュー・UI テストから検索を試すためのネットワーク無しスタブ。

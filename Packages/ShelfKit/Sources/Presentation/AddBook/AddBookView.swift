@@ -37,11 +37,16 @@ public struct AddBookView: View {
                     }
                     destinationPicker
                     DatePicker("購入日", selection: $viewModel.purchasedAt, displayedComponents: .date)
-                    actionButton
                 }
                 .padding(20)
             }
             .background(ColorToken.boardBackground.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom) {
+                actionButton
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(ColorToken.boardBackground)
+            }
             .navigationTitle("本を追加")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -59,6 +64,8 @@ public struct AddBookView: View {
                 ManualEntryView { entry in
                     Task {
                         if await viewModel.addManual(entry: entry) != nil {
+                            router.selectedTab = .board
+                            router.boardMode = viewModel.destination == .unread ? .pile : .shelf
                             showManualEntry = false
                             dismiss()
                         }
@@ -178,6 +185,9 @@ public struct AddBookView: View {
         return Button {
             Task {
                 if await viewModel.addSelected() != nil {
+                    // Notion 02 S-05「追加後はシートを閉じ、置き場所に応じて本棚 or 積読を表示」
+                    router.selectedTab = .board
+                    router.boardMode = viewModel.destination == .unread ? .pile : .shelf
                     dismiss()
                 }
             }

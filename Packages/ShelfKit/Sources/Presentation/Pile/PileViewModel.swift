@@ -37,7 +37,7 @@ public final class PileViewModel {
             books = out.books
             statistics = out.statistics
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 
@@ -48,15 +48,15 @@ public final class PileViewModel {
     }
 
     public func startReading(id: BookID) async {
-        do { _ = try await container.changeStatus.execute(id: id, newStatus: .reading, now: Date()) } catch { errorMessage = String(describing: error) }
+        do { _ = try await container.changeStatus.execute(id: id, newStatus: .reading, now: Date()) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 
     public func markFinished(id: BookID) async {
-        do { _ = try await container.changeStatus.execute(id: id, newStatus: .finished, now: Date()) } catch { errorMessage = String(describing: error) }
+        do { _ = try await container.changeStatus.execute(id: id, newStatus: .finished, now: Date()) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 
     public func deleteBook(id: BookID) async {
-        do { try await container.deleteBook.execute(id: id) } catch { errorMessage = String(describing: error) }
+        do { try await container.deleteBook.execute(id: id) } catch { errorMessage = DomainErrorMessage.describe(error) }
     }
 }
 

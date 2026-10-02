@@ -16,10 +16,12 @@ public final class CalendarViewModel {
     private let container: PresentationContainer
     private let calendar: Calendar
 
-    public init(container: PresentationContainer, calendar: Calendar = .current, now: Date = Date()) {
+    public init(container: PresentationContainer, calendar: Calendar? = nil, now: Date = Date()) {
         self.container = container
-        self.calendar = calendar
-        let components = calendar.dateComponents([.year, .month], from: now)
+        var cal = calendar ?? Calendar(identifier: .gregorian)
+        cal.firstWeekday = 1 // Notion 02「日曜始まり」をロケール設定によらず保証
+        self.calendar = cal
+        let components = cal.dateComponents([.year, .month], from: now)
         self.year = components.year ?? 2026
         self.month = components.month ?? 1
     }
@@ -34,7 +36,7 @@ public final class CalendarViewModel {
         do {
             summary = try await container.fetchCalendar.execute(year: year, month: month)
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 

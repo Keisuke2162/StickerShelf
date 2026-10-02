@@ -37,7 +37,7 @@ public final class BookDetailViewModel {
                 )
             }
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 
@@ -49,7 +49,7 @@ public final class BookDetailViewModel {
             book = try await container.updateBookDetail.execute(id: bookID, draft: draft, now: Date())
             return true
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
             return false
         }
     }
@@ -59,7 +59,7 @@ public final class BookDetailViewModel {
             try await container.deleteBook.execute(id: bookID)
             return true
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
             return false
         }
     }
@@ -68,7 +68,7 @@ public final class BookDetailViewModel {
         do {
             book = try await container.replaceCover.execute(id: bookID, imageData: data)
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 }

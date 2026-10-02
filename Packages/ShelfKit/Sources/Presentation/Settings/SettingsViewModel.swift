@@ -24,7 +24,7 @@ public final class SettingsViewModel {
 
     public func reload() async {
         do { apiKeyStatus = try container.loadAPIKeyStatus.execute() } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 
@@ -38,7 +38,7 @@ public final class SettingsViewModel {
             apiKeyInput = ""
             await reload()
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 
@@ -47,7 +47,7 @@ public final class SettingsViewModel {
             try container.deleteAPIKey.execute()
             await reload()
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = DomainErrorMessage.describe(error)
         }
     }
 
