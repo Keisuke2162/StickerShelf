@@ -52,10 +52,16 @@ public final class AddBookViewModel {
 
     public func search(keyword: String) async {
         isSearching = true
+        errorMessage = nil
         defer { isSearching = false }
         do {
             let out = try await container.searchCatalog.execute(keyword: keyword, page: 0)
             results = out.items
+        } catch is CancellationError {
+            // デバウンスで前の検索を自分でキャンセルしたときは静かに戻る。
+            return
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            return
         } catch {
             errorMessage = DomainErrorMessage.describe(error)
             results = []

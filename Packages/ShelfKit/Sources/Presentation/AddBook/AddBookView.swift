@@ -25,13 +25,27 @@ public struct AddBookView: View {
                     if viewModel.isSearching {
                         ProgressView()
                     }
-                    if !viewModel.results.isEmpty {
+                    if let error = viewModel.errorMessage, !viewModel.isSearching {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .font(FontToken.bodyRegular())
+                                .foregroundStyle(ColorToken.sunday)
+                                .multilineTextAlignment(.leading)
+                            Button("手動で登録する") { showManualEntry = true }
+                                .buttonStyle(.borderedProminent)
+                                .tint(ColorToken.accent)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.surface))
+                    } else if !viewModel.results.isEmpty {
                         resultsList
-                    } else if !viewModel.keyword.isEmpty && !viewModel.isSearching {
+                    } else if !viewModel.keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isSearching {
                         VStack(spacing: 8) {
                             Text("見つかりませんでした").font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
                             Button("手動で登録する") { showManualEntry = true }
                                 .buttonStyle(.borderedProminent)
+                                .tint(ColorToken.accent)
                         }
                         .frame(maxWidth: .infinity).padding()
                     }
