@@ -15,12 +15,12 @@ STATUS: IN_PROGRESS
 - [ ] DEBUG 用の起動引数（`-SeedSampleData`、`-StartScreen`、`-UseStubCatalog`）の受け口を用意（Phase 4 で実装）
 
 ### Phase 1：Domain
-- [ ] 値オブジェクト（ISBN, ReadingStatus, ReadingPeriod, ReadingProgress, StickerPlacement, StickerEdge, BookMetadata, PurchaseInfo, CoverImage, APIKey, BookID, CatalogBook）
-- [ ] `Book` 集約とドメインルール
-- [ ] ドメインサービス（StickerPlacementFactory, TsundokuStatistics, ReadingCalendar）
-- [ ] リポジトリプロトコル（BookRepository, BookCatalogRepository, APIKeyRepository, CoverImageRepository, SearchPreferenceRepository）
-- [ ] DomainError
-- [ ] DomainTests
+- [x] 値オブジェクト（ISBN, ReadingStatus, ReadingPeriod, ReadingProgress, StickerPlacement, StickerEdge, BookMetadata, PurchaseInfo, CoverImage, APIKey, BookID, CatalogBook）
+- [x] `Book` 集約とドメインルール
+- [x] ドメインサービス（StickerPlacementFactory, TsundokuStatistics, ReadingCalendar）
+- [x] リポジトリプロトコル（BookRepository, BookCatalogRepository, APIKeyRepository, CoverImageRepository, SearchPreferenceRepository）
+- [x] DomainError
+- [x] DomainTests
 
 ### Phase 2：Infrastructure
 - [ ] SwiftData：BookRecord / Mapper / SwiftDataBookRepository（@ModelActor）
