@@ -1,0 +1,24 @@
+# Secrets
+Secrets.xcconfig
+
+# Build
+.build/
+build/
+DerivedData/
+*.xcresult
+.verify.log
+.verify-pkg.log
+.verify.xcresult
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# Swift Package Manager
+Packages/*/.build/
+*.swiftpm/
+.swiftpm/
+
+# macOS
+.DS_Store

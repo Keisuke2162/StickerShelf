@@ -1,32 +1,17 @@
-//
-//  StickerShelfApp.swift
-//  StickerShelf
-//
-//  Created by Kei on 2026/10/02.
-//
-
 import SwiftUI
-import SwiftData
+import Presentation
 
 @main
 struct StickerShelfApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    @State private var container: AppContainer
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    init() {
+        _container = State(initialValue: AppContainer.makeDefault())
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView(container: container)
         }
-        .modelContainer(sharedModelContainer)
     }
 }
