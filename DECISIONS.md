@@ -26,3 +26,4 @@
 - 2026-10-02: `GeneratedCoverView` の背景色は `title.utf8` を DJB2 ハッシュした決定論的インデックスで選ぶ。`title.hashValue` は実行ごとに seed が変わるため不可。
 - 2026-10-02: AppContainer の `-SeedSampleData` フラグはサンプル追加投入のみに使い、永続ストアの On/Off とは切り離す（永続化は常に有効）。
 - 2026-10-02: Presentation 層の全 ViewModel は `DomainErrorMessage.describe(_:)` 経由でユーザー向け文言に正規化してから `errorMessage` に代入する。
+- 2026-10-02: フォント TTF（Dela Gothic One / Zen Kaku Gothic New）は本サンドボックスでは取得できないため同梱せず、`FontToken` が `UIFont(name:size:)` の nil 判定で `.system` へフォールバックする。TTF が揃った後の手順は: `StickerShelf/Resources/Fonts/*.ttf` に配置 → pbxproj の Resources ビルドフェーズに追加 → `INFOPLIST_KEY_UIAppFonts = (DelaGothicOne-Regular.ttf, ZenKakuGothicNew-Regular.ttf, ZenKakuGothicNew-Medium.ttf, ZenKakuGothicNew-Bold.ttf)` を Debug/Release の両方に追加。
