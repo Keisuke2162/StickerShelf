@@ -14,7 +14,8 @@ public enum DomainErrorMessage {
             case .stickerNotAllowedForUnread: return "積読の本にはステッカーを配置できません。"
             case .duplicateBook: return "この本は既に登録されています。"
             case .bookNotFound: return "対象の本が見つかりませんでした。"
-            case .catalogUnavailable: return "検索サービスに接続できません。時間をおいて再度お試しください。"
+            case .catalogUnavailable(let reason):
+                return "検索サービスに接続できません。時間をおいて再度お試しください。\n(\(reason))"
             case .catalogQuotaExceeded: return "検索の上限に達しました。設定で API キーを登録すると安定します。"
             case .invalidAPIKey: return "API キーが正しくありません。設定を確認してください。"
             case .network: return "インターネットに接続されていません。"

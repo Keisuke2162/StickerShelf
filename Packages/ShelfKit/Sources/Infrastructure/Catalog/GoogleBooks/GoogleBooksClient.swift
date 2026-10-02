@@ -1,12 +1,15 @@
 import Foundation
+import OSLog
 import Domain
+
+private let clientLogger = Logger(subsystem: "StickerShelf", category: "GoogleBooksClient")
 
 public struct GoogleBooksClient: Sendable {
     public let session: URLSession
     public let apiKeyProvider: @Sendable () -> APIKey?
     public let bundleID: String
     public let endpoint: URL
-    /// 429 / 5xx 発生時のリトライ待機秒。空なら無リトライ。
+    /// 429 / 5xx 発生時のリトライ待機（ナノ秒）。空なら無リトライ。
     public let retryDelays: [UInt64]
     public let sleep: @Sendable (UInt64) async -> Void
 
@@ -43,9 +46,11 @@ public struct GoogleBooksClient: Sendable {
             } catch let error as DomainError {
                 lastError = error
                 if attempt < retryDelays.count, isRetryable(error) {
+                    clientLogger.warning("retrying (attempt=\(attempt + 1)) due to \(String(describing: error), privacy: .public)")
                     await sleep(retryDelays[attempt])
                     continue
                 }
+                clientLogger.error("Google Books request failed: \(String(describing: error), privacy: .public)")
                 throw error
             }
         }
@@ -74,6 +79,8 @@ public struct GoogleBooksClient: Sendable {
         }
         var request = URLRequest(url: url)
         request.setValue(bundleID, forHTTPHeaderField: "X-Ios-Bundle-Identifier")
+        // 一部の CDN が User-Agent 無しのリクエストを 400 で弾くことがあるため明示する。
+        request.setValue("StickerShelf/1.0 iOS", forHTTPHeaderField: "User-Agent")
         return request
     }
 
@@ -81,16 +88,19 @@ public struct GoogleBooksClient: Sendable {
         do {
             return try await session.data(for: request)
         } catch let urlError as URLError {
+            clientLogger.error("URLError: code=\(urlError.code.rawValue) description=\(urlError.localizedDescription, privacy: .public)")
             throw GoogleBooksErrorMapper.map(urlError: urlError)
         }
     }
 
     private func isRetryable(_ error: DomainError) -> Bool {
+        // 400（bad request）や 403（APIキー不正・制限不一致）はリトライしても意味がない。
+        // 429（quota）と 5xx 相当の `catalogUnavailable(reason:)` のうちサーバーエラーだけ再試行。
         switch error {
         case .catalogQuotaExceeded:
             return true
-        case .catalogUnavailable:
-            return true
+        case .catalogUnavailable(let reason):
+            return reason.contains("server error")
         default:
             return false
         }
