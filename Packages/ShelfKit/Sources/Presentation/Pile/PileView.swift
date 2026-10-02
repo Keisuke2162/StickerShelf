@@ -95,19 +95,20 @@ public struct PileView: View {
 
     private var pileScene: some View {
         GeometryReader { geo in
+            let readyScene = sceneReady(preferredSize: geo.size)
             ZStack(alignment: .top) {
-                SpriteView(scene: makeScene(size: geo.size), options: [.allowsTransparency])
+                SpriteView(scene: readyScene, options: [.allowsTransparency])
                     .frame(width: geo.size.width, height: geo.size.height)
                     .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.pileBackground))
                     .onChange(of: geo.size) { _, newSize in
-                        scene?.size = newSize
-                        sceneSize = newSize
+                        if newSize != .zero { readyScene.size = newSize }
                     }
                     .onChange(of: viewModel.books) { _, _ in
-                        updateScene()
+                        updateScene(readyScene, initial: false)
                     }
                     .task {
-                        updateScene(initial: true)
+                        // 初回表示時に 1 回だけ順次落下を実行
+                        updateScene(readyScene, initial: true)
                     }
 
                 Text("長押しで「読み始める」→ 本棚に貼られます")
@@ -120,19 +121,26 @@ public struct PileView: View {
         }
     }
 
-    private func makeScene(size: CGSize) -> PileScene {
-        if let existing = scene, existing.size == size { return existing }
-        let s = PileScene(size: size == .zero ? CGSize(width: 300, height: 500) : size)
+    /// シーンは View のライフタイム中に 1 回だけ生成し、以降はサイズだけ追従する。
+    /// `.resizeFill` でも scene.size は自動更新されないため、サイズ変更は呼び出し側で設定する。
+    /// body 中に @State を書くので DispatchQueue.main.async で次フレームへ繰り延べる。
+    private func sceneReady(preferredSize: CGSize) -> PileScene {
+        if let existing = scene {
+            if preferredSize != .zero, existing.size != preferredSize {
+                existing.size = preferredSize
+            }
+            return existing
+        }
+        let initial = preferredSize == .zero ? CGSize(width: 390, height: 500) : preferredSize
+        let s = PileScene(size: initial)
         s.scaleMode = .resizeFill
         s.onTap = { id in router.detailBookID = id }
         s.onLongPress = { id in longPressTarget = id }
-        scene = s
-        sceneSize = s.size
+        DispatchQueue.main.async { scene = s }
         return s
     }
 
-    private func updateScene(initial: Bool = false) {
-        guard let scene else { return }
+    private func updateScene(_ scene: PileScene, initial: Bool) {
         Task {
             let items: [PileScene.Item] = await mapToItems(viewModel.books)
             await MainActor.run {
