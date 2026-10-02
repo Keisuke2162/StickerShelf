@@ -25,22 +25,34 @@ enum GoogleBooksErrorMapper {
 
     static func map(statusCode: Int, data: Data) -> DomainError {
         let decoded = try? JSONDecoder().decode(GoogleBooksErrorBodyDTO.self, from: data)
-        let reasons = Set((decoded?.error?.errors ?? []).compactMap { $0.reason?.lowercased() })
-        let serverMessage = decoded?.error?.message
+        // Google は errors[].reason / details[].reason / status / message の複数箇所に
+        // 原因を散らばらせるので全部拾って lowercase で突き合わせる。
+        var reasons: Set<String> = []
+        for entry in decoded?.error?.errors ?? [] {
+            if let reason = entry.reason { reasons.insert(reason.lowercased()) }
+        }
+        for detail in decoded?.error?.details ?? [] {
+            if let reason = detail.reason { reasons.insert(reason.lowercased()) }
+        }
+        if let status = decoded?.error?.status { reasons.insert(status.lowercased()) }
+        let serverMessage = decoded?.error?.message ?? ""
+        let messageLower = serverMessage.lowercased()
+        let looksLikeInvalidKey = messageLower.contains("api key") && (messageLower.contains("not valid") || messageLower.contains("invalid"))
+
+        func isInvalidKeyReason() -> Bool {
+            reasons.contains("keyinvalid") || reasons.contains("api_key_invalid")
+                || reasons.contains("iosbundleidinvalid") || reasons.contains("ipaddressblocked")
+                || looksLikeInvalidKey
+        }
 
         switch statusCode {
         case 400:
-            if reasons.contains("keyinvalid") || reasons.contains("api_key_invalid") {
-                return .invalidAPIKey
-            }
-            return .catalogUnavailable(reason: "HTTP 400: \(serverMessage ?? "bad request")")
+            if isInvalidKeyReason() { return .invalidAPIKey }
+            return .catalogUnavailable(reason: "HTTP 400: \(serverMessage.isEmpty ? "bad request" : serverMessage)")
         case 401:
             return .invalidAPIKey
         case 403:
-            if reasons.contains("ipaddressblocked") || reasons.contains("iosbundleidinvalid")
-                || reasons.contains("keyinvalid") || reasons.contains("api_key_invalid") {
-                return .invalidAPIKey
-            }
+            if isInvalidKeyReason() { return .invalidAPIKey }
             if reasons.contains("dailylimitexceeded") || reasons.contains("ratelimitexceeded")
                 || reasons.contains("userratelimitexceeded") {
                 return .catalogQuotaExceeded
@@ -51,9 +63,9 @@ enum GoogleBooksErrorMapper {
         case 429:
             return .catalogQuotaExceeded
         case 500...599:
-            return .catalogUnavailable(reason: "server error \(statusCode): \(serverMessage ?? "")")
+            return .catalogUnavailable(reason: "server error \(statusCode): \(serverMessage)")
         default:
-            return .catalogUnavailable(reason: "HTTP \(statusCode): \(serverMessage ?? "")")
+            return .catalogUnavailable(reason: "HTTP \(statusCode): \(serverMessage)")
         }
     }
 }

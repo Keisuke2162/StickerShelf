@@ -35,10 +35,16 @@ struct GoogleBooksErrorBodyDTO: Decodable, Sendable {
     struct Error: Decodable, Sendable {
         struct Entry: Decodable, Sendable {
             let reason: String?
+            let message: String?
+        }
+        struct Detail: Decodable, Sendable {
+            let reason: String?
         }
         let code: Int?
         let message: String?
         let errors: [Entry]?
+        let details: [Detail]?
+        let status: String?
     }
     let error: Error?
 }

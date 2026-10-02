@@ -88,6 +88,11 @@ public struct GoogleBooksClient: Sendable {
         do {
             return try await session.data(for: request)
         } catch let urlError as URLError {
+            if urlError.code == .cancelled {
+                // デバウンス由来の自己キャンセルは Domain エラーに変換せず、そのまま呼び出し側に伝播する。
+                clientLogger.debug("URL request cancelled")
+                throw urlError
+            }
             clientLogger.error("URLError: code=\(urlError.code.rawValue) description=\(urlError.localizedDescription, privacy: .public)")
             throw GoogleBooksErrorMapper.map(urlError: urlError)
         }
