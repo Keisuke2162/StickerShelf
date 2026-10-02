@@ -31,8 +31,8 @@ STATUS: IN_PROGRESS
 - [x] InfrastructureTests（JSONフィクスチャ・URLProtocolスタブ）
 
 ### Phase 3：Application
-- [ ] 03 ページの UseCase 一覧をすべて実装（SearchCatalog, FindCatalogBookByISBN, AddBook, FetchShelf, FetchPile, FetchReadingCalendar, FetchBookDetail, UpdateBookDetail, ChangeReadingStatus, MoveSticker, BringStickerToFront, ReplaceCoverImage, DeleteBook, SaveAPIKey, DeleteAPIKey, LoadAPIKeyStatus, TestCatalogConnection）
-- [ ] ApplicationTests
+- [x] 03 ページの UseCase 一覧をすべて実装（SearchCatalog, FindCatalogBookByISBN, AddBook, FetchShelf, FetchPile, FetchReadingCalendar, FetchBookDetail, UpdateBookDetail, ChangeReadingStatus, MoveSticker, BringStickerToFront, ReplaceCoverImage, DeleteBook, SaveAPIKey, DeleteAPIKey, LoadAPIKeyStatus, TestCatalogConnection）
+- [x] ApplicationTests
 
 ### Phase 4：Presentation
 - [ ] DesignSystem：Color/Font トークン、`StickerView`（3種の縁）、`GeneratedCoverView`、`CoverImageView`（非同期）、チップ、セグメント
