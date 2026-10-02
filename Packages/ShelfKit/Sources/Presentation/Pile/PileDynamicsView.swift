@@ -70,7 +70,7 @@ struct PileDynamicsView: UIViewRepresentable {
         weak var container: ContainerView? {
             didSet {
                 container?.onLayout = { [weak self] size in
-                    self?.rebuildCollisions(for: size)
+                    self?.handleLayout(size: size)
                 }
             }
         }
@@ -80,6 +80,7 @@ struct PileDynamicsView: UIViewRepresentable {
         private var currentCollision: UICollisionBehavior?
         private var currentGravity: UIGravityBehavior?
         private var currentItemBehavior: UIDynamicItemBehavior?
+        private var pendingItems: [Item] = []
 
         private(set) var currentItemIDs: [BookID] = []
 
@@ -89,36 +90,26 @@ struct PileDynamicsView: UIViewRepresentable {
         }
 
         func rebuild(with items: [Item]) {
-            guard let container else { return }
-            if animator == nil {
-                animator = UIDynamicAnimator(referenceView: container)
+            guard let container else {
+                pendingItems = items
+                return
             }
             // 既存ビューを一度全消去して作り直す
-            for (_, view) in itemViews {
-                view.removeFromSuperview()
-            }
-            itemViews.removeAll()
             animator?.removeAllBehaviors()
+            animator = nil
+            for (_, view) in itemViews { view.removeFromSuperview() }
+            itemViews.removeAll()
             currentCollision = nil
             currentGravity = nil
             currentItemBehavior = nil
-
-            // 追加日の古い順＝items[0] から順に、画面上部からランダム位置に落とす
-            let padding: CGFloat = 20
-            let safeWidth = max(container.bounds.width, 100)
-            for (index, item) in items.enumerated() {
-                let size = item.size
-                let maxX = max(padding, safeWidth - padding - size.width)
-                let x = CGFloat.random(in: padding...max(padding + 1, maxX))
-                // index * 36 で縦にずらして同時衝突を減らす
-                let y = -size.height - 20 - CGFloat(index) * 36
-                let view = ItemView(item: item, onTap: { [weak self] id in self?.onTap(id) }, onLongPress: { [weak self] id in self?.onLongPress(id) })
-                view.frame = CGRect(origin: CGPoint(x: x, y: y), size: size)
-                container.addSubview(view)
-                itemViews[item.id] = view
-            }
+            pendingItems = items
             currentItemIDs = items.map(\.id)
-            applyBehaviors()
+
+            let size = container.bounds.size
+            if size.width > 0, size.height > 0 {
+                installItems(items, in: size)
+            }
+            // サイズ未確定ならレイアウト確定時 (handleLayout) に installItems が走る。
         }
 
         func refreshContent(items: [Item]) {
@@ -127,24 +118,40 @@ struct PileDynamicsView: UIViewRepresentable {
             }
         }
 
-        /// レイアウト確定時やサイズ変更時に衝突境界を貼り直す。
-        func rebuildCollisions(for size: CGSize) {
-            guard let animator else { return }
-            if let old = currentCollision {
-                animator.removeBehavior(old)
+        /// コンテナのレイアウト確定・サイズ変更時に呼ばれる。
+        /// まだアイテムをインストールしていなければここで実行、既に設置済みなら衝突境界だけ貼り直す。
+        private func handleLayout(size: CGSize) {
+            guard size.width > 0, size.height > 0 else { return }
+            if itemViews.isEmpty, !pendingItems.isEmpty {
+                installItems(pendingItems, in: size)
+            } else if !itemViews.isEmpty {
+                rebuildCollisions(for: size)
             }
-            let views = Array(itemViews.values)
-            let collision = UICollisionBehavior(items: views)
-            collision.translatesReferenceBoundsIntoBoundary = false
-            // 床の上に 4pt ぶんのマージンを残す（Notion 02 の `pileFloor` 4pt 相当）
-            let barrier = CGRect(x: 0, y: 0, width: size.width, height: max(size.height - 4, 1))
-            collision.addBoundary(withIdentifier: "barrier" as NSString, for: UIBezierPath(rect: barrier))
-            animator.addBehavior(collision)
-            currentCollision = collision
         }
 
-        private func applyBehaviors() {
-            guard let animator else { return }
+        /// サイズが確定している前提で、アイテムの UIView 生成・物理挙動の wiring を全部やる。
+        private func installItems(_ items: [Item], in size: CGSize) {
+            guard let container else { return }
+            let padding: CGFloat = 20
+
+            for (index, item) in items.enumerated() {
+                let s = item.size
+                let maxX = max(padding, size.width - padding - s.width)
+                let x = CGFloat.random(in: padding...max(padding + 1, maxX))
+                // index * 36 で縦にずらして同時衝突を減らす
+                let y = -s.height - 20 - CGFloat(index) * 36
+                let view = ItemView(item: item,
+                                    onTap: { [weak self] id in self?.onTap(id) },
+                                    onLongPress: { [weak self] id in self?.onLongPress(id) })
+                view.frame = CGRect(origin: CGPoint(x: x, y: y), size: s)
+                container.addSubview(view)
+                itemViews[item.id] = view
+            }
+
+            // サイズ確定後に animator を生成（referenceView の bounds が有効になってから）
+            let animator = UIDynamicAnimator(referenceView: container)
+            self.animator = animator
+
             let views = Array(itemViews.values)
             guard !views.isEmpty else { return }
 
@@ -158,13 +165,40 @@ struct PileDynamicsView: UIViewRepresentable {
             currentItemBehavior = itemBehavior
 
             let gravity = UIGravityBehavior(items: views)
-            gravity.magnitude = 1.0 // 下方向にほどよい重力
+            gravity.magnitude = 1.0
             animator.addBehavior(gravity)
             currentGravity = gravity
 
-            if let size = container?.bounds.size, size != .zero {
-                rebuildCollisions(for: size)
-            }
+            rebuildCollisions(for: size)
+        }
+
+        /// 上辺は開放し、左・右・床の 3 本だけ境界にする。
+        /// 閉じた矩形にすると負 y で生成したアイテムが外側上辺にぶつかって画面に入ってこない。
+        private func rebuildCollisions(for size: CGSize) {
+            guard let animator else { return }
+            if let old = currentCollision { animator.removeBehavior(old) }
+            let views = Array(itemViews.values)
+            let collision = UICollisionBehavior(items: views)
+            collision.translatesReferenceBoundsIntoBoundary = false
+
+            let floorY = max(size.height - 4, 1)
+            let left = UIBezierPath()
+            left.move(to: CGPoint(x: 0, y: -1000))
+            left.addLine(to: CGPoint(x: 0, y: floorY))
+            collision.addBoundary(withIdentifier: "left" as NSString, for: left)
+
+            let right = UIBezierPath()
+            right.move(to: CGPoint(x: size.width, y: -1000))
+            right.addLine(to: CGPoint(x: size.width, y: floorY))
+            collision.addBoundary(withIdentifier: "right" as NSString, for: right)
+
+            let floor = UIBezierPath()
+            floor.move(to: CGPoint(x: 0, y: floorY))
+            floor.addLine(to: CGPoint(x: size.width, y: floorY))
+            collision.addBoundary(withIdentifier: "floor" as NSString, for: floor)
+
+            animator.addBehavior(collision)
+            currentCollision = collision
         }
     }
 
