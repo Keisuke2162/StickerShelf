@@ -11,6 +11,8 @@ DerivedData/
 .verify.xcresult
 .claude/last-verify.log
 .claude/*.log
+.claude/.stop-count
+.claude/.*
 
 # Xcode user data
 xcuserdata/
