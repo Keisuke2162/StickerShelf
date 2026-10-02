@@ -35,6 +35,16 @@ public actor SwiftDataBookRepository: BookRepository {
         return records.compactMap(BookRecordMapper.toDomain)
     }
 
+    public func fetch(boardID: BoardID) async throws -> [Book] {
+        let raw = boardID.rawValue
+        let desc = FetchDescriptor<BookRecord>(
+            predicate: #Predicate { $0.boardIDValue == raw },
+            sortBy: [SortDescriptor(\.addedAt, order: .forward)]
+        )
+        let records = try modelContext.fetch(desc)
+        return records.compactMap(BookRecordMapper.toDomain)
+    }
+
     public func fetchFinished(in interval: DateInterval) async throws -> [Book] {
         let start = interval.start
         let end = interval.end

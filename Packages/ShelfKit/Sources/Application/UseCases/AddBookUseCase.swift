@@ -4,6 +4,8 @@ import Domain
 public struct AddBookInput: Sendable {
     public let source: Source
     public let initialStatus: ReadingStatus
+    /// 本棚に貼るときの所属ボード。`initialStatus == .unread` では無視される。
+    public let boardID: BoardID?
     public let purchasedAt: Date?
     public let now: Date
 
@@ -30,9 +32,10 @@ public struct AddBookInput: Sendable {
         }
     }
 
-    public init(source: Source, initialStatus: ReadingStatus, purchasedAt: Date?, now: Date) {
+    public init(source: Source, initialStatus: ReadingStatus, boardID: BoardID? = nil, purchasedAt: Date?, now: Date) {
         self.source = source
         self.initialStatus = initialStatus
+        self.boardID = boardID
         self.purchasedAt = purchasedAt
         self.now = now
     }
@@ -88,6 +91,7 @@ public struct AddBookUseCase: AddBookUseCaseProtocol {
             try book.changeStatus(to: input.initialStatus, on: input.now) {
                 placementFactory.make(existingZIndexes: existingZ)
             }
+            book.moveToBoard(input.boardID)
         }
         try await books.save(book)
         return book

@@ -32,6 +32,7 @@ struct BookRecordMapperTests {
             coverKind: "remote",
             coverRemoteURL: URL(string: "https://example.com/cover.jpg"),
             coverLocalFileName: nil,
+            boardIDValue: nil,
             addedAt: Date(timeIntervalSince1970: 1_768_000_000)
         )
     }

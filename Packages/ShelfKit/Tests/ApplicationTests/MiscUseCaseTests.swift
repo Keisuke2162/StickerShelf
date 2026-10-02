@@ -14,26 +14,17 @@ struct MiscUseCaseTests {
         #expect(book?.metadata.title == "見つけた")
     }
 
-    @Test func fetchShelf_sortsByZIndexAscending() async throws {
+    @Test func fetchShelf_sortsByZIndexAscending_filteredByBoard() async throws {
         let now = Date()
-        let a = try Book(metadata: try BookMetadata(title: "A"), status: .reading, sticker: .init(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 5), addedAt: now)
-        let b = try Book(metadata: try BookMetadata(title: "B"), status: .finished, period: ReadingPeriod(startedAt: now, finishedAt: now), sticker: .init(x: 0.4, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1), addedAt: now)
-        let repo = InMemoryBookRepository([a, b])
+        let boardA = BoardID()
+        let boardB = BoardID()
+        let a = try Book(metadata: try BookMetadata(title: "A"), status: .reading, sticker: .init(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 5), boardID: boardA, addedAt: now)
+        let b = try Book(metadata: try BookMetadata(title: "B"), status: .finished, period: ReadingPeriod(startedAt: now, finishedAt: now), sticker: .init(x: 0.4, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1), boardID: boardA, addedAt: now)
+        let c = try Book(metadata: try BookMetadata(title: "別ボード"), status: .reading, sticker: .init(x: 0.3, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 2), boardID: boardB, addedAt: now)
+        let repo = InMemoryBookRepository([a, b, c])
         let useCase = FetchShelfUseCase(books: repo)
-        let out = try await useCase.execute(filter: .all)
+        let out = try await useCase.execute(boardID: boardA)
         #expect(out.books.map(\.metadata.title) == ["B", "A"])
-        #expect(out.counts.reading == 1)
-        #expect(out.counts.finished == 1)
-    }
-
-    @Test func fetchShelf_filtersReadingOnly() async throws {
-        let now = Date()
-        let a = try Book(metadata: try BookMetadata(title: "読書中"), status: .reading, sticker: .init(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1), addedAt: now)
-        let b = try Book(metadata: try BookMetadata(title: "読了"), status: .finished, period: ReadingPeriod(startedAt: now, finishedAt: now), sticker: .init(x: 0.4, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 2), addedAt: now)
-        let repo = InMemoryBookRepository([a, b])
-        let useCase = FetchShelfUseCase(books: repo)
-        let out = try await useCase.execute(filter: .readingOnly)
-        #expect(out.books.map(\.metadata.title) == ["読書中"])
     }
 
     @Test func fetchReadingCalendar_delegatesToReadingCalendar() async throws {

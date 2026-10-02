@@ -8,19 +8,14 @@ import Application
 @Observable
 public final class AddBookViewModel {
     public enum Destination: Hashable {
-        case reading, finished, unread
-        var status: ReadingStatus {
-            switch self {
-            case .reading: return .reading
-            case .finished: return .finished
-            case .unread: return .unread
-            }
-        }
+        case shelf, pile
     }
 
     public var keyword: String = ""
-    public var destination: Destination = .unread
+    public var destination: Destination = .pile
     public var purchasedAt: Date = Date()
+    public var selectedBoardID: BoardID?
+    public private(set) var boards: [Board] = []
     public private(set) var results: [SearchCatalogOutput.Item] = []
     public private(set) var isSearching = false
     public private(set) var isAdding = false
@@ -33,6 +28,22 @@ public final class AddBookViewModel {
 
     public init(container: PresentationContainer) {
         self.container = container
+    }
+
+    public func loadBoards() async {
+        boards = (try? await container.fetchBoards.execute()) ?? []
+        if selectedBoardID == nil { selectedBoardID = boards.first?.id }
+    }
+
+    public func createBoard(name: String) async {
+        do {
+            let board = try await container.createBoard.execute(name: name, now: Date())
+            boards = (try? await container.fetchBoards.execute()) ?? boards
+            selectedBoardID = board.id
+            destination = .shelf
+        } catch {
+            errorMessage = DomainErrorMessage.describe(error)
+        }
     }
 
     public func onKeywordChanged() {
@@ -58,7 +69,6 @@ public final class AddBookViewModel {
             let out = try await container.searchCatalog.execute(keyword: keyword, page: 0)
             results = out.items
         } catch is CancellationError {
-            // デバウンスで前の検索を自分でキャンセルしたときは静かに戻る。
             return
         } catch let urlError as URLError where urlError.code == .cancelled {
             return
@@ -71,19 +81,30 @@ public final class AddBookViewModel {
     public func lookupISBN(_ isbn: ISBN) async {
         isSearching = true
         defer { isSearching = false }
-        // SearchCatalog は ISBN 入力を自動判定して ISBN 検索 + 登録済み判定を返すので、そのまま流す。
         await search(keyword: isbn.value)
         if let first = results.first, !first.alreadyRegistered {
             selectedCatalog = first.catalog
         }
     }
 
+    private func initialStatus() -> ReadingStatus {
+        destination == .pile ? .unread : .reading
+    }
+
+    private func effectiveBoardID() -> BoardID? {
+        destination == .shelf ? selectedBoardID : nil
+    }
+
     public func addSelected() async -> Book? {
         guard let selectedCatalog else { return nil }
+        if destination == .shelf, effectiveBoardID() == nil {
+            errorMessage = "本棚を選ぶか、先に本棚を作成してください。"
+            return nil
+        }
         isAdding = true
         defer { isAdding = false }
         do {
-            let input = AddBookInput(source: .catalog(selectedCatalog), initialStatus: destination.status, purchasedAt: purchasedAt, now: Date())
+            let input = AddBookInput(source: .catalog(selectedCatalog), initialStatus: initialStatus(), boardID: effectiveBoardID(), purchasedAt: purchasedAt, now: Date())
             let book = try await container.addBook.execute(input)
             addedBook = book
             return book
@@ -94,10 +115,14 @@ public final class AddBookViewModel {
     }
 
     public func addManual(entry: AddBookInput.ManualEntry) async -> Book? {
+        if destination == .shelf, effectiveBoardID() == nil {
+            errorMessage = "本棚を選ぶか、先に本棚を作成してください。"
+            return nil
+        }
         isAdding = true
         defer { isAdding = false }
         do {
-            let input = AddBookInput(source: .manual(entry), initialStatus: destination.status, purchasedAt: purchasedAt, now: Date())
+            let input = AddBookInput(source: .manual(entry), initialStatus: initialStatus(), boardID: effectiveBoardID(), purchasedAt: purchasedAt, now: Date())
             let book = try await container.addBook.execute(input)
             addedBook = book
             return book

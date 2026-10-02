@@ -2,6 +2,7 @@ import Foundation
 
 public enum DomainError: Error, Equatable, Sendable {
     case invalidTitle
+    case invalidBoardName
     case invalidISBN
     case invalidPeriod
     case pageOutOfRange

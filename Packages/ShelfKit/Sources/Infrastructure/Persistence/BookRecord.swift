@@ -40,6 +40,9 @@ public final class BookRecord {
     public var coverRemoteURL: URL?
     public var coverLocalFileName: String?
 
+    /// 所属するボードの ID（unread 本は nil）。
+    public var boardIDValue: UUID?
+
     public var addedAt: Date = Date(timeIntervalSince1970: 0)
 
     public init(
@@ -68,6 +71,7 @@ public final class BookRecord {
         coverKind: String,
         coverRemoteURL: URL?,
         coverLocalFileName: String?,
+        boardIDValue: UUID?,
         addedAt: Date
     ) {
         self.id = id
@@ -95,6 +99,7 @@ public final class BookRecord {
         self.coverKind = coverKind
         self.coverRemoteURL = coverRemoteURL
         self.coverLocalFileName = coverLocalFileName
+        self.boardIDValue = boardIDValue
         self.addedAt = addedAt
     }
 }

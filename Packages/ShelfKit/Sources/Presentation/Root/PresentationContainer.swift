@@ -23,9 +23,14 @@ public struct PresentationContainer: Sendable {
     public let deleteAPIKey: any DeleteAPIKeyUseCaseProtocol
     public let loadAPIKeyStatus: any LoadAPIKeyStatusUseCaseProtocol
     public let testConnection: any TestCatalogConnectionUseCaseProtocol
+    public let fetchBoards: any FetchBoardsUseCaseProtocol
+    public let createBoard: any CreateBoardUseCaseProtocol
+    public let deleteBoard: any DeleteBoardUseCaseProtocol
+    public let moveBookToBoard: any MoveBookToBoardUseCaseProtocol
     public let searchPreferences: any SearchPreferenceRepository
     public let coverImages: any CoverImageRepository
     public let bookChanges: @Sendable () -> AsyncStream<Void>
+    public let boardChanges: @Sendable () -> AsyncStream<Void>
 
     public init(
         searchCatalog: any SearchCatalogUseCaseProtocol,
@@ -45,9 +50,14 @@ public struct PresentationContainer: Sendable {
         deleteAPIKey: any DeleteAPIKeyUseCaseProtocol,
         loadAPIKeyStatus: any LoadAPIKeyStatusUseCaseProtocol,
         testConnection: any TestCatalogConnectionUseCaseProtocol,
+        fetchBoards: any FetchBoardsUseCaseProtocol,
+        createBoard: any CreateBoardUseCaseProtocol,
+        deleteBoard: any DeleteBoardUseCaseProtocol,
+        moveBookToBoard: any MoveBookToBoardUseCaseProtocol,
         searchPreferences: any SearchPreferenceRepository,
         coverImages: any CoverImageRepository,
-        bookChanges: @escaping @Sendable () -> AsyncStream<Void>
+        bookChanges: @escaping @Sendable () -> AsyncStream<Void>,
+        boardChanges: @escaping @Sendable () -> AsyncStream<Void>
     ) {
         self.searchCatalog = searchCatalog
         self.findCatalogByISBN = findCatalogByISBN
@@ -66,9 +76,14 @@ public struct PresentationContainer: Sendable {
         self.deleteAPIKey = deleteAPIKey
         self.loadAPIKeyStatus = loadAPIKeyStatus
         self.testConnection = testConnection
+        self.fetchBoards = fetchBoards
+        self.createBoard = createBoard
+        self.deleteBoard = deleteBoard
+        self.moveBookToBoard = moveBookToBoard
         self.searchPreferences = searchPreferences
         self.coverImages = coverImages
         self.bookChanges = bookChanges
+        self.boardChanges = boardChanges
     }
 }
 

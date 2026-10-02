@@ -9,6 +9,8 @@ public struct AddBookView: View {
     @State private var viewModel: AddBookViewModel
     @State private var showScanner = false
     @State private var showManualEntry = false
+    @State private var showCreateBoard = false
+    @State private var newBoardName = ""
     @Environment(\.dismiss) private var dismiss
 
     public init(container: PresentationContainer, router: Router) {
@@ -50,6 +52,9 @@ public struct AddBookView: View {
                         .frame(maxWidth: .infinity).padding()
                     }
                     destinationPicker
+                    if viewModel.destination == .shelf {
+                        boardPicker
+                    }
                     DatePicker("購入日", selection: $viewModel.purchasedAt, displayedComponents: .date)
                 }
                 .padding(20)
@@ -63,6 +68,7 @@ public struct AddBookView: View {
             }
             .navigationTitle("本を追加")
             .navigationBarTitleDisplayMode(.inline)
+            .task { await viewModel.loadBoards() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("閉じる") { dismiss() }
@@ -79,12 +85,25 @@ public struct AddBookView: View {
                     Task {
                         if await viewModel.addManual(entry: entry) != nil {
                             router.selectedTab = .board
-                            router.boardMode = viewModel.destination == .unread ? .pile : .shelf
+                            router.boardMode = viewModel.destination == .pile ? .pile : .shelf
                             showManualEntry = false
                             dismiss()
                         }
                     }
                 }
+            }
+            .alert("新しい本棚を作成", isPresented: $showCreateBoard) {
+                TextField("本棚の名前", text: $newBoardName)
+                Button("作成") {
+                    let name = newBoardName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !name.isEmpty else { return }
+                    let captured = name
+                    Task {
+                        await viewModel.createBoard(name: captured)
+                        newBoardName = ""
+                    }
+                }
+                Button("キャンセル", role: .cancel) { newBoardName = "" }
             }
         }
     }
@@ -164,9 +183,8 @@ public struct AddBookView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("どこに置く？").font(FontToken.sectionTitle())
             HStack(spacing: 8) {
-                destinationCard(.reading, title: "読んでる", description: "ボードに貼る")
-                destinationCard(.finished, title: "読んだ", description: "貼って日付記録")
-                destinationCard(.unread, title: "積読", description: "下に落とす")
+                destinationCard(.shelf, title: "本棚", description: "ボードに貼る")
+                destinationCard(.pile, title: "積読", description: "下に落とす")
             }
         }
     }
@@ -188,20 +206,40 @@ public struct AddBookView: View {
         .buttonStyle(.plain)
     }
 
-    private var actionButton: some View {
-        let label: String = {
-            switch viewModel.destination {
-            case .reading: return "ボードに貼る"
-            case .finished: return "読了として貼る"
-            case .unread: return "積読ゾーンに落とす"
+    private var boardPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("どの本棚に貼る？").font(FontToken.sectionTitle())
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(viewModel.boards) { board in
+                        Chip(title: board.name, isSelected: viewModel.selectedBoardID == board.id) {
+                            viewModel.selectedBoardID = board.id
+                        }
+                    }
+                    Button {
+                        showCreateBoard = true
+                    } label: {
+                        Label("本棚を追加", systemImage: "plus")
+                            .font(FontToken.label())
+                            .foregroundStyle(ColorToken.ink)
+                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .background(Capsule().fill(ColorToken.surface))
+                            .overlay(Capsule().stroke(ColorToken.hairline, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .frame(minHeight: 44)
+                }
             }
-        }()
+        }
+    }
+
+    private var actionButton: some View {
+        let label = viewModel.destination == .pile ? "積読ゾーンに落とす" : "本棚に貼る"
         return Button {
             Task {
                 if await viewModel.addSelected() != nil {
-                    // Notion 02 S-05「追加後はシートを閉じ、置き場所に応じて本棚 or 積読を表示」
                     router.selectedTab = .board
-                    router.boardMode = viewModel.destination == .unread ? .pile : .shelf
+                    router.boardMode = viewModel.destination == .pile ? .pile : .shelf
                     dismiss()
                 }
             }

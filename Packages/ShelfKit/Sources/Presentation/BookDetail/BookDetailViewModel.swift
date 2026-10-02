@@ -8,6 +8,7 @@ import Application
 @Observable
 public final class BookDetailViewModel {
     public private(set) var book: Book?
+    public private(set) var boards: [Board] = []
     public private(set) var isSaving = false
     public var errorMessage: String?
 
@@ -22,18 +23,16 @@ public final class BookDetailViewModel {
     }
 
     public func load() async {
+        boards = (try? await container.fetchBoards.execute()) ?? []
         do {
             book = try await container.fetchBookDetail.execute(id: bookID)
             if let book {
                 draft = BookDetailDraft(
                     status: book.status,
-                    currentPage: book.progress.currentPage,
-                    startedAt: book.period.startedAt,
                     finishedAt: book.period.finishedAt,
                     purchasedAt: book.purchase.purchasedAt,
-                    purchasePlace: book.purchase.place,
-                    memo: book.memo,
-                    stickerEdge: book.stickerEdge
+                    stickerEdge: book.stickerEdge,
+                    boardID: book.boardID ?? boards.first?.id
                 )
             }
         } catch {

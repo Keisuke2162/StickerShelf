@@ -3,23 +3,17 @@ import Domain
 
 public struct BookDetailDraft: Sendable {
     public var status: ReadingStatus
-    public var currentPage: Int
-    public var startedAt: Date?
     public var finishedAt: Date?
     public var purchasedAt: Date?
-    public var purchasePlace: String
-    public var memo: String
     public var stickerEdge: StickerEdge
+    public var boardID: BoardID?
 
-    public init(status: ReadingStatus, currentPage: Int, startedAt: Date?, finishedAt: Date?, purchasedAt: Date?, purchasePlace: String, memo: String, stickerEdge: StickerEdge) {
+    public init(status: ReadingStatus, finishedAt: Date?, purchasedAt: Date?, stickerEdge: StickerEdge, boardID: BoardID?) {
         self.status = status
-        self.currentPage = currentPage
-        self.startedAt = startedAt
         self.finishedAt = finishedAt
         self.purchasedAt = purchasedAt
-        self.purchasePlace = purchasePlace
-        self.memo = memo
         self.stickerEdge = stickerEdge
+        self.boardID = boardID
     }
 }
 
@@ -49,12 +43,12 @@ public struct UpdateBookDetailUseCase: UpdateBookDetailUseCaseProtocol {
                 placementFactory.make(existingZIndexes: existingZ)
             }
         }
-        // 2. 次に draft の明示値で日付・進捗を上書き（ユーザーが入れた値を優先）
-        try book.updatePeriod(startedAt: draft.startedAt, finishedAt: draft.finishedAt)
-        try book.updateProgress(currentPage: draft.currentPage)
-        book.updatePurchase(PurchaseInfo(purchasedAt: draft.purchasedAt, place: draft.purchasePlace))
-        book.updateMemo(draft.memo)
+        // 2. 次に draft の明示値で日付を上書き（startedAt は Book の自動補完に委ねる）
+        try book.updatePeriod(startedAt: book.period.startedAt, finishedAt: draft.finishedAt)
+        book.updatePurchase(PurchaseInfo(purchasedAt: draft.purchasedAt, place: book.purchase.place))
         book.changeStickerEdge(draft.stickerEdge)
+        // 3. ボード割当。unread のときは nil 強制。
+        book.moveToBoard(draft.status == .unread ? nil : draft.boardID)
         try await books.save(book)
         return book
     }

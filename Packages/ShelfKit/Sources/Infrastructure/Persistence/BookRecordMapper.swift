@@ -70,6 +70,7 @@ enum BookRecordMapper {
             sticker: sticker,
             stickerEdge: edge,
             cover: cover,
+            boardID: record.boardIDValue.map(BoardID.init),
             addedAt: record.addedAt
         )
     }
@@ -102,6 +103,7 @@ enum BookRecordMapper {
             coverKind: kind,
             coverRemoteURL: remote,
             coverLocalFileName: local,
+            boardIDValue: book.boardID?.rawValue,
             addedAt: book.addedAt
         )
     }
@@ -132,6 +134,7 @@ enum BookRecordMapper {
         record.coverKind = kind
         record.coverRemoteURL = remote
         record.coverLocalFileName = local
+        record.boardIDValue = book.boardID?.rawValue
     }
 
     private static func coverFields(_ cover: CoverImage) -> (String, URL?, String?) {

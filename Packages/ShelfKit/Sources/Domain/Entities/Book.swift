@@ -12,6 +12,8 @@ public struct Book: Identifiable, Equatable, Sendable {
     public private(set) var sticker: StickerPlacement?
     public private(set) var stickerEdge: StickerEdge
     public private(set) var cover: CoverImage
+    /// 所属する本棚ボード。`status == .unread` では nil（積読は Board に属さない）。
+    public private(set) var boardID: BoardID?
     public let addedAt: Date
 
     /// 新規作成用。不変条件を検証する。
@@ -26,6 +28,7 @@ public struct Book: Identifiable, Equatable, Sendable {
         sticker: StickerPlacement? = nil,
         stickerEdge: StickerEdge = .white,
         cover: CoverImage = .none,
+        boardID: BoardID? = nil,
         addedAt: Date
     ) throws {
         if (status == .unread) != (sticker == nil) {
@@ -45,6 +48,7 @@ public struct Book: Identifiable, Equatable, Sendable {
         self.sticker = sticker
         self.stickerEdge = stickerEdge
         self.cover = cover
+        self.boardID = boardID
         self.addedAt = addedAt
     }
 
@@ -60,6 +64,7 @@ public struct Book: Identifiable, Equatable, Sendable {
         sticker: StickerPlacement?,
         stickerEdge: StickerEdge,
         cover: CoverImage,
+        boardID: BoardID?,
         addedAt: Date
     ) -> Book {
         Book(
@@ -73,6 +78,7 @@ public struct Book: Identifiable, Equatable, Sendable {
             sticker: sticker,
             stickerEdge: stickerEdge,
             cover: cover,
+            boardID: boardID,
             addedAt: addedAt
         )
     }
@@ -88,6 +94,7 @@ public struct Book: Identifiable, Equatable, Sendable {
         sticker: StickerPlacement?,
         stickerEdge: StickerEdge,
         cover: CoverImage,
+        boardID: BoardID?,
         addedAt: Date
     ) {
         self.id = id
@@ -100,7 +107,12 @@ public struct Book: Identifiable, Equatable, Sendable {
         self.sticker = sticker
         self.stickerEdge = stickerEdge
         self.cover = cover
+        self.boardID = boardID
         self.addedAt = addedAt
+    }
+
+    public mutating func moveToBoard(_ boardID: BoardID?) {
+        self.boardID = boardID
     }
 
     // MARK: - Behaviors

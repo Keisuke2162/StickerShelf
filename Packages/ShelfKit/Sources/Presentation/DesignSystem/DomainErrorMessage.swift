@@ -8,6 +8,7 @@ public enum DomainErrorMessage {
         if let domain = error as? DomainError {
             switch domain {
             case .invalidTitle: return "タイトルを入力してください。"
+            case .invalidBoardName: return "本棚の名前を入力してください。"
             case .invalidISBN: return "ISBN の形式が正しくありません。"
             case .invalidPeriod: return "読了日は読み始めた日より後にしてください。"
             case .pageOutOfRange: return "現在ページは 0 以上、総ページ数以下にしてください。"

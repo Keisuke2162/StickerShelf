@@ -13,7 +13,7 @@ public struct AppContainer: Sendable {
     public static func makeDefault(launchArguments: [String] = CommandLine.arguments) -> AppContainer {
         let options = StartupOptions.parse(from: launchArguments)
 
-        let schema = Schema([BookRecord.self])
+        let schema = Schema([BookRecord.self, BoardRecord.self])
         // -SeedSampleData は「サンプルを追加投入」のためのフラグで、永続化の挙動とは切り離す。
         // ModelContainer 失敗時はインメモリにフォールバックして起動クラッシュを回避する。
         let container: ModelContainer = {
@@ -27,6 +27,7 @@ public struct AppContainer: Sendable {
         }()
 
         let bookRepository = SwiftDataBookRepository(modelContainer: container)
+        let boardRepository = SwiftDataBoardRepository(modelContainer: container)
 
         let bundleID = Bundle.main.bundleIdentifier ?? "com.example.StickerShelf"
         let fallback = InfoPlistAPIKeyProvider()
@@ -71,16 +72,54 @@ public struct AppContainer: Sendable {
             deleteAPIKey: DeleteAPIKeyUseCase(repository: apiKeyRepository),
             loadAPIKeyStatus: LoadAPIKeyStatusUseCase(repository: apiKeyRepository),
             testConnection: TestCatalogConnectionUseCase(catalog: catalog),
+            fetchBoards: FetchBoardsUseCase(boards: boardRepository),
+            createBoard: CreateBoardUseCase(boards: boardRepository),
+            deleteBoard: DeleteBoardUseCase(boards: boardRepository, books: bookRepository),
+            moveBookToBoard: MoveBookToBoardUseCase(books: bookRepository),
             searchPreferences: searchPreferences,
             coverImages: covers,
-            bookChanges: { bookRepository.changes() }
+            bookChanges: { bookRepository.changes() },
+            boardChanges: { boardRepository.changes() }
         )
 
         let app = AppContainer(presentation: presentation, startupOptions: options)
+        // 既定ボードが未作成なら「読んでる」「読んだ」を seed。
+        Task { await ensureDefaultBoards(repository: boardRepository, books: bookRepository) }
         if options.seedSampleData {
-            Task { await SampleDataSeeder.seed(into: bookRepository) }
+            Task { await SampleDataSeeder.seed(into: bookRepository, boards: boardRepository) }
         }
         return app
+    }
+
+    /// 初回起動時に既定ボードを seed。既存の reading/finished 本に boardID を割り当て直す移行も行う。
+    private static func ensureDefaultBoards(repository: SwiftDataBoardRepository, books: SwiftDataBookRepository) async {
+        guard let existing = try? await repository.fetchAll(), existing.isEmpty else { return }
+        let now = Date()
+        guard let readingBoard = try? Board(name: "読んでる", createdAt: now, sortOrder: 1) else { return }
+        guard let finishedBoard = try? Board(name: "読んだ", createdAt: now, sortOrder: 2) else { return }
+        try? await repository.save(readingBoard)
+        try? await repository.save(finishedBoard)
+
+        // 既存書籍の移行: boardID 未設定の .reading / .finished を既定ボードに割り当て
+        if let all = try? await books.fetchAll() {
+            var migrated: [Book] = []
+            for var book in all {
+                guard book.boardID == nil else { continue }
+                switch book.status {
+                case .reading:
+                    book.moveToBoard(readingBoard.id)
+                    migrated.append(book)
+                case .finished:
+                    book.moveToBoard(finishedBoard.id)
+                    migrated.append(book)
+                case .unread:
+                    continue
+                }
+            }
+            if !migrated.isEmpty {
+                try? await books.saveAll(migrated)
+            }
+        }
     }
 }
 

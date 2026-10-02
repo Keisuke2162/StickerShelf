@@ -75,8 +75,12 @@ public struct RootView: View {
             router.boardMode = .shelf
             // 詳細は本が1冊でもあればそれを表示。無ければ何もしない。
             Task {
-                if let first = try? await container.fetchShelf.execute(filter: .all).books.first {
-                    router.detailBookID = first.id
+                let boards = (try? await container.fetchBoards.execute()) ?? []
+                for board in boards {
+                    if let first = try? await container.fetchShelf.execute(boardID: board.id).books.first {
+                        router.detailBookID = first.id
+                        break
+                    }
                 }
             }
         }

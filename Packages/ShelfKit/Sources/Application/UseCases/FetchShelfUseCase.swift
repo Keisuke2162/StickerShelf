@@ -1,24 +1,15 @@
 import Foundation
 import Domain
 
-public enum ShelfFilter: Sendable {
-    case all
-    case readingOnly
-    case finishedOnly
-}
-
 public struct FetchShelfOutput: Sendable {
     public let books: [Book]
-    public let counts: (reading: Int, finished: Int)
-
-    public init(books: [Book], counts: (reading: Int, finished: Int)) {
+    public init(books: [Book]) {
         self.books = books
-        self.counts = counts
     }
 }
 
 public protocol FetchShelfUseCaseProtocol: Sendable {
-    func execute(filter: ShelfFilter) async throws -> FetchShelfOutput
+    func execute(boardID: BoardID) async throws -> FetchShelfOutput
 }
 
 public struct FetchShelfUseCase: FetchShelfUseCaseProtocol {
@@ -28,19 +19,12 @@ public struct FetchShelfUseCase: FetchShelfUseCaseProtocol {
         self.books = books
     }
 
-    public func execute(filter: ShelfFilter) async throws -> FetchShelfOutput {
-        let onShelf = try await books.fetch(status: [.reading, .finished])
-        let reading = onShelf.filter { $0.status == .reading }
-        let finished = onShelf.filter { $0.status == .finished }
-        let selected: [Book]
-        switch filter {
-        case .all: selected = onShelf
-        case .readingOnly: selected = reading
-        case .finishedOnly: selected = finished
+    public func execute(boardID: BoardID) async throws -> FetchShelfOutput {
+        let onBoard = try await books.fetch(boardID: boardID)
+        // zIndex 昇順。sticker を持たない本は末尾へ。
+        let sorted = onBoard.sorted { lhs, rhs in
+            (lhs.sticker?.zIndex ?? Int.min) < (rhs.sticker?.zIndex ?? Int.min)
         }
-        let sorted = selected.sorted { lhs, rhs in
-            (lhs.sticker?.zIndex ?? 0) < (rhs.sticker?.zIndex ?? 0)
-        }
-        return FetchShelfOutput(books: sorted, counts: (reading.count, finished.count))
+        return FetchShelfOutput(books: sorted)
     }
 }

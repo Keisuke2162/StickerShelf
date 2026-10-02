@@ -27,6 +27,10 @@ public actor InMemoryBookRepository: BookRepository {
         storage.values.filter { status.contains($0.status) }.sorted { $0.addedAt < $1.addedAt }
     }
 
+    public func fetch(boardID: BoardID) async throws -> [Book] {
+        storage.values.filter { $0.boardID == boardID }.sorted { $0.addedAt < $1.addedAt }
+    }
+
     public func fetchFinished(in interval: DateInterval) async throws -> [Book] {
         storage.values.filter { book in
             guard book.status == .finished, let date = book.period.finishedAt else { return false }

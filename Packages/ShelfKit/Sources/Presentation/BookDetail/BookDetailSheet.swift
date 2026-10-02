@@ -34,20 +34,34 @@ public struct BookDetailSheet: View {
     @ViewBuilder
     private func content(book: Book, draft: Binding<BookDetailDraft>) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                headerRow(book: book)
+            VStack(alignment: .center, spacing: 20) {
+                heroCover(book: book)
+                titleBlock(book: book)
                 statusSegment(draft: draft)
-                progressSection(book: book, draft: draft)
+                if draft.wrappedValue.status != .unread, !viewModel.boards.isEmpty {
+                    boardPicker(draft: draft)
+                }
                 dateGrid(draft: draft)
-                memoSection(draft: draft)
                 edgePicker(draft: draft)
                 coverReplace()
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 12)
         }
         .background(ColorToken.boardBackground.ignoresSafeArea())
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .foregroundStyle(ColorToken.ink)
+                }
+                .accessibilityLabel("閉じる")
+            }
+        }
         .safeAreaInset(edge: .bottom) {
             bottomButtons()
                 .padding(.horizontal, 20)
@@ -80,37 +94,34 @@ public struct BookDetailSheet: View {
         )
     }
 
-    private func headerRow(book: Book) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            StickerView(
-                cover: book.cover,
-                title: book.metadata.title,
-                edge: book.stickerEdge,
-                size: CGSize(width: 98, height: 140),
-                loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
-            )
-            .rotationEffect(.degrees(-4))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(book.metadata.title).font(FontToken.bookTitleLarge()).foregroundStyle(ColorToken.ink)
-                if !book.metadata.authors.isEmpty {
-                    Text(book.metadata.authors.joined(separator: ", "))
-                        .font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
-                }
-                if let publisher = book.metadata.publisher {
-                    Text(publisher).font(FontToken.caption()).foregroundStyle(ColorToken.inkTertiary)
-                }
-                if let pages = book.metadata.pageCount {
-                    Text("\(pages)ページ").font(FontToken.caption()).foregroundStyle(ColorToken.inkTertiary)
-                }
+    /// 書影を上部中央にリッチに表示（140×200）。
+    private func heroCover(book: Book) -> some View {
+        StickerView(
+            cover: book.cover,
+            title: book.metadata.title,
+            edge: book.stickerEdge,
+            size: CGSize(width: 140, height: 200),
+            loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
+        )
+        .rotationEffect(.degrees(-4))
+        .padding(.top, 8)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func titleBlock(book: Book) -> some View {
+        VStack(spacing: 4) {
+            Text(book.metadata.title)
+                .font(FontToken.bookTitleLarge())
+                .foregroundStyle(ColorToken.ink)
+                .multilineTextAlignment(.center)
+            if !book.metadata.authors.isEmpty {
+                Text(book.metadata.authors.joined(separator: ", "))
+                    .font(FontToken.bodyRegular())
+                    .foregroundStyle(ColorToken.inkSecondary)
+                    .multilineTextAlignment(.center)
             }
-            Spacer()
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark").frame(width: 44, height: 44)
-                    .background(Circle().fill(ColorToken.surfaceMuted))
-                    .foregroundStyle(ColorToken.ink)
-            }
-            .buttonStyle(.plain)
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func statusSegment(draft: Binding<BookDetailDraft>) -> some View {
@@ -136,40 +147,10 @@ public struct BookDetailSheet: View {
         switch status { case .unread: return "積読"; case .reading: return "読んでる"; case .finished: return "読んだ" }
     }
 
-    @ViewBuilder
-    private func progressSection(book: Book, draft: Binding<BookDetailDraft>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("進捗").font(FontToken.sectionTitle())
-                Spacer()
-                if let total = book.metadata.pageCount {
-                    Text("\(draft.wrappedValue.currentPage) / \(total) p").font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-                }
-            }
-            if let total = book.metadata.pageCount, total > 0 {
-                ProgressView(value: Double(draft.wrappedValue.currentPage), total: Double(total))
-                    .tint(ColorToken.accent)
-                Stepper("現在ページ", value: Binding(
-                    get: { draft.wrappedValue.currentPage },
-                    set: { draft.wrappedValue.currentPage = max(0, min(total, $0)) }
-                ), in: 0...total, step: 1)
-                .labelsHidden()
-            } else {
-                TextField("現在ページ", value: Binding(
-                    get: { draft.wrappedValue.currentPage },
-                    set: { draft.wrappedValue.currentPage = max(0, $0) }
-                ), formatter: NumberFormatter())
-                .keyboardType(.numberPad)
-            }
-        }
-    }
-
     private func dateGrid(draft: Binding<BookDetailDraft>) -> some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             dateCell(title: "購入日", date: Binding(get: { draft.wrappedValue.purchasedAt }, set: { draft.wrappedValue.purchasedAt = $0 }))
-            dateCell(title: "読み始めた日", date: Binding(get: { draft.wrappedValue.startedAt }, set: { draft.wrappedValue.startedAt = $0 }))
             dateCell(title: "読了日", date: Binding(get: { draft.wrappedValue.finishedAt }, set: { draft.wrappedValue.finishedAt = $0 }))
-            textCell(title: "購入場所", text: Binding(get: { draft.wrappedValue.purchasePlace }, set: { draft.wrappedValue.purchasePlace = $0 }))
         }
     }
 
@@ -199,23 +180,20 @@ public struct BookDetailSheet: View {
         }
     }
 
-    private func textCell(title: String, text: Binding<String>) -> some View {
+    private func boardPicker(draft: Binding<BookDetailDraft>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-            TextField("", text: text)
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1.5))
+            Text("本棚").font(FontToken.sectionTitle())
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(viewModel.boards) { board in
+                        Chip(title: board.name, isSelected: draft.wrappedValue.boardID == board.id) {
+                            draft.wrappedValue.boardID = board.id
+                        }
+                    }
+                }
+            }
         }
-    }
-
-    private func memoSection(draft: Binding<BookDetailDraft>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("メモ").font(FontToken.sectionTitle())
-            TextEditor(text: Binding(get: { draft.wrappedValue.memo }, set: { draft.wrappedValue.memo = $0 }))
-                .frame(minHeight: 84)
-                .padding(6)
-                .background(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1.5))
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func edgePicker(draft: Binding<BookDetailDraft>) -> some View {
@@ -237,6 +215,7 @@ public struct BookDetailSheet: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func edgeLabel(_ edge: StickerEdge) -> String {

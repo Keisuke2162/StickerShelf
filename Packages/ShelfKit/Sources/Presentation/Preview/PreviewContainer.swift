@@ -8,8 +8,11 @@ import Application
 /// SwiftData・Keychain・URLSession なしで全画面を描画できる。
 public enum PreviewSupport {
     @MainActor
-    public static func makeContainer(books: [Book] = PreviewSupport.sampleBooks()) -> PresentationContainer {
-        let repository = PreviewBookRepository(initial: books)
+    public static func makeContainer() -> PresentationContainer {
+        let readingBoard = (try? Board(name: "読んでる", createdAt: Date(), sortOrder: 1))!
+        let finishedBoard = (try? Board(name: "読んだ", createdAt: Date(), sortOrder: 2))!
+        let repository = PreviewBookRepository(initial: sampleBooks(readingBoardID: readingBoard.id, finishedBoardID: finishedBoard.id))
+        let boardRepo = PreviewBoardRepository(initial: [readingBoard, finishedBoard])
         let catalog = PreviewCatalogRepository()
         let apiKeys = PreviewAPIKeyRepository()
         let covers = PreviewCoverImageRepository()
@@ -32,13 +35,18 @@ public enum PreviewSupport {
             deleteAPIKey: DeleteAPIKeyUseCase(repository: apiKeys),
             loadAPIKeyStatus: LoadAPIKeyStatusUseCase(repository: apiKeys),
             testConnection: TestCatalogConnectionUseCase(catalog: catalog),
+            fetchBoards: FetchBoardsUseCase(boards: boardRepo),
+            createBoard: CreateBoardUseCase(boards: boardRepo),
+            deleteBoard: DeleteBoardUseCase(boards: boardRepo, books: repository),
+            moveBookToBoard: MoveBookToBoardUseCase(books: repository),
             searchPreferences: prefs,
             coverImages: covers,
-            bookChanges: { repository.changes() }
+            bookChanges: { repository.changes() },
+            boardChanges: { boardRepo.changes() }
         )
     }
 
-    public static func sampleBooks() -> [Book] {
+    public static func sampleBooks(readingBoardID: BoardID, finishedBoardID: BoardID) -> [Book] {
         let factory = StickerPlacementFactory()
         let now = Date()
         var zIndexes: [Int] = []
@@ -47,12 +55,14 @@ public enum PreviewSupport {
             guard let meta = try? BookMetadata(title: "サンプル書籍 \(i + 1)", authors: ["著者 \(i + 1)"], pageCount: 240) else { continue }
             let placement = factory.make(existingZIndexes: zIndexes)
             zIndexes.append(placement.zIndex)
+            let isReading = i.isMultiple(of: 2)
             if let book = try? Book(
                 metadata: meta,
-                status: i.isMultiple(of: 2) ? .reading : .finished,
-                period: i.isMultiple(of: 2) ? ReadingPeriod(startedAt: now) : ReadingPeriod(startedAt: now, finishedAt: now),
+                status: isReading ? .reading : .finished,
+                period: isReading ? ReadingPeriod(startedAt: now) : ReadingPeriod(startedAt: now, finishedAt: now),
                 progress: ReadingProgress(currentPage: 120),
                 sticker: placement,
+                boardID: isReading ? readingBoardID : finishedBoardID,
                 addedAt: now.addingTimeInterval(-Double(i) * 86400)
             ) {
                 books.append(book)
@@ -84,6 +94,7 @@ actor PreviewBookRepository: BookRepository {
     func fetch(id: BookID) async throws -> Book? { storage[id] }
     func fetch(isbn: ISBN) async throws -> Book? { storage.values.first { $0.metadata.isbn == isbn } }
     func fetch(status: Set<ReadingStatus>) async throws -> [Book] { storage.values.filter { status.contains($0.status) } }
+    func fetch(boardID: BoardID) async throws -> [Book] { storage.values.filter { $0.boardID == boardID }.sorted { $0.addedAt < $1.addedAt } }
     func fetchFinished(in interval: DateInterval) async throws -> [Book] {
         storage.values.filter { b in
             guard b.status == .finished, let d = b.period.finishedAt else { return false }
@@ -93,6 +104,41 @@ actor PreviewBookRepository: BookRepository {
     func save(_ book: Book) async throws { storage[book.id] = book; broadcast() }
     func saveAll(_ books: [Book]) async throws { for b in books { storage[b.id] = b }; broadcast() }
     func delete(id: BookID) async throws { storage.removeValue(forKey: id); broadcast() }
+
+    nonisolated func changes() -> AsyncStream<Void> {
+        AsyncStream { continuation in
+            let token = UUID()
+            self.continuationsLock.lock()
+            self.continuations[token] = continuation
+            self.continuationsLock.unlock()
+            continuation.yield(())
+            continuation.onTermination = { [weak self] _ in
+                self?.continuationsLock.lock()
+                self?.continuations.removeValue(forKey: token)
+                self?.continuationsLock.unlock()
+            }
+        }
+    }
+
+    private nonisolated func broadcast() {
+        continuationsLock.lock()
+        let conts = Array(continuations.values)
+        continuationsLock.unlock()
+        for c in conts { c.yield(()) }
+    }
+}
+
+actor PreviewBoardRepository: BoardRepository {
+    private var storage: [BoardID: Board] = [:]
+    nonisolated(unsafe) private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
+    nonisolated private let continuationsLock = NSLock()
+
+    init(initial: [Board]) { for b in initial { storage[b.id] = b } }
+
+    func fetchAll() async throws -> [Board] { storage.values.sorted { $0.sortOrder < $1.sortOrder } }
+    func fetch(id: BoardID) async throws -> Board? { storage[id] }
+    func save(_ board: Board) async throws { storage[board.id] = board; broadcast() }
+    func delete(id: BoardID) async throws { storage.removeValue(forKey: id); broadcast() }
 
     nonisolated func changes() -> AsyncStream<Void> {
         AsyncStream { continuation in

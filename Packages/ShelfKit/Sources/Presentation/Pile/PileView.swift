@@ -77,11 +77,7 @@ public struct PileView: View {
     }
 
     private var stats: some View {
-        HStack(spacing: 8) {
-            statCard(title: "積読", value: "\(viewModel.statistics.count)冊")
-            statCard(title: "平均積読日数", value: "\(viewModel.statistics.averageDays)日")
-            statCard(title: "今月増えた", value: "+\(viewModel.statistics.addedThisMonth)冊")
-        }
+        statCard(title: "積読", value: "\(viewModel.statistics.count)冊")
     }
 
     private func statCard(title: String, value: String) -> some View {
