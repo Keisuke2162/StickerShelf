@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": 400,
+    "message": "API key not valid",
+    "errors": [
+      { "reason": "keyInvalid" }
+    ]
+  }
+}

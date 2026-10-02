@@ -23,12 +23,12 @@ STATUS: IN_PROGRESS
 - [x] DomainTests
 
 ### Phase 2：Infrastructure
-- [ ] SwiftData：BookRecord / Mapper / SwiftDataBookRepository（@ModelActor）
-- [ ] Google Books：DTO / Mapper / Client / ErrorMapper / GoogleBooksCatalogRepository
-- [ ] KeychainAPIKeyRepository（Secrets.xcconfig フォールバック込み）
-- [ ] FileCoverImageRepository / ImageLoader
-- [ ] UserDefaultsSearchPreferenceRepository
-- [ ] InfrastructureTests（JSONフィクスチャ・URLProtocolスタブ）
+- [x] SwiftData：BookRecord / Mapper / SwiftDataBookRepository（@ModelActor）
+- [x] Google Books：DTO / Mapper / Client / ErrorMapper / GoogleBooksCatalogRepository
+- [x] KeychainAPIKeyRepository（Secrets.xcconfig フォールバック込み）
+- [x] FileCoverImageRepository / ImageLoader
+- [x] UserDefaultsSearchPreferenceRepository
+- [x] InfrastructureTests（JSONフィクスチャ・URLProtocolスタブ）
 
 ### Phase 3：Application
 - [ ] 03 ページの UseCase 一覧をすべて実装（SearchCatalog, FindCatalogBookByISBN, AddBook, FetchShelf, FetchPile, FetchReadingCalendar, FetchBookDetail, UpdateBookDetail, ChangeReadingStatus, MoveSticker, BringStickerToFront, ReplaceCoverImage, DeleteBook, SaveAPIKey, DeleteAPIKey, LoadAPIKeyStatus, TestCatalogConnection）

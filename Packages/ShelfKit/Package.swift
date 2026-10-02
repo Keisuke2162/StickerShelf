@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "ShelfKit",
     defaultLocalization: "ja",
-    platforms: [.iOS(.v17)],
+    platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "ShelfKit", targets: ["Presentation", "Infrastructure", "Application", "Domain"]),
         .library(name: "Domain", targets: ["Domain"]),

@@ -1,0 +1,15 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 1,
+  "items": [
+    {
+      "id": "vol-isbn10",
+      "volumeInfo": {
+        "title": "ISBN10のみの本",
+        "industryIdentifiers": [
+          { "type": "ISBN_10", "identifier": "4101010013" }
+        ]
+      }
+    }
+  ]
+}
