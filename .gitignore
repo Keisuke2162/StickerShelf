@@ -9,6 +9,8 @@ DerivedData/
 .verify.log
 .verify-pkg.log
 .verify.xcresult
+.claude/last-verify.log
+.claude/*.log
 
 # Xcode user data
 xcuserdata/

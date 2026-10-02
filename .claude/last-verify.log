@@ -1,5 +1,0 @@
-==> Simulator: iPhone 16e (iOS 26.2) 7A62BBC2-FEC4-495E-A6DB-118986D335F7
-==> xcodebuild test
-==> App スキーム: ビルド成功・テスト成功 (3 tests)・警告ゼロ
-==> ShelfKit swift test
-==> OK: App + ShelfKit どちらもビルド・テスト成功・警告ゼロ
