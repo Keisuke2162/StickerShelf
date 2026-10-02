@@ -26,6 +26,7 @@ struct PileDynamicsView: UIViewRepresentable {
     func makeUIView(context: Context) -> ContainerView {
         let view = ContainerView()
         view.backgroundColor = .clear
+        view.clipsToBounds = true // 万一の透過でも bounds 外にレンダされないように
         context.coordinator.container = view
         context.coordinator.rebuild(with: items)
         return view
@@ -172,8 +173,9 @@ struct PileDynamicsView: UIViewRepresentable {
             rebuildCollisions(for: size)
         }
 
-        /// 上辺は開放し、左・右・床の 3 本だけ境界にする。
-        /// 閉じた矩形にすると負 y で生成したアイテムが外側上辺にぶつかって画面に入ってこない。
+        /// 上辺は開放し、左・右・床を「厚みのある矩形」の境界にする。
+        /// 線 (addLine) で境界を作ると高速落下時にタンネリング（透過）が起きて
+        /// アイテムが床をすり抜けて画面外まで落ちていくことがある。
         private func rebuildCollisions(for size: CGSize) {
             guard let animator else { return }
             if let old = currentCollision { animator.removeBehavior(old) }
@@ -182,20 +184,22 @@ struct PileDynamicsView: UIViewRepresentable {
             collision.translatesReferenceBoundsIntoBoundary = false
 
             let floorY = max(size.height - 4, 1)
-            let left = UIBezierPath()
-            left.move(to: CGPoint(x: 0, y: -1000))
-            left.addLine(to: CGPoint(x: 0, y: floorY))
-            collision.addBoundary(withIdentifier: "left" as NSString, for: left)
+            let wallThickness: CGFloat = 2000
 
-            let right = UIBezierPath()
-            right.move(to: CGPoint(x: size.width, y: -1000))
-            right.addLine(to: CGPoint(x: size.width, y: floorY))
-            collision.addBoundary(withIdentifier: "right" as NSString, for: right)
+            // 床: floorY から下に 2000pt 伸びる厚い壁。上辺から接近してきたアイテムが
+            // 1 フレームでは絶対に抜けられない厚さを持つ。
+            let floorRect = CGRect(x: -wallThickness, y: floorY,
+                                   width: size.width + wallThickness * 2, height: wallThickness)
+            collision.addBoundary(withIdentifier: "floor" as NSString, for: UIBezierPath(rect: floorRect))
 
-            let floor = UIBezierPath()
-            floor.move(to: CGPoint(x: 0, y: floorY))
-            floor.addLine(to: CGPoint(x: size.width, y: floorY))
-            collision.addBoundary(withIdentifier: "floor" as NSString, for: floor)
+            // 左右の壁: 画面外から十分な厚みで。上辺のみ開放のため、負 y 側は壁を延ばさない。
+            let leftRect = CGRect(x: -wallThickness, y: -wallThickness,
+                                  width: wallThickness, height: size.height + wallThickness * 2)
+            collision.addBoundary(withIdentifier: "left" as NSString, for: UIBezierPath(rect: leftRect))
+
+            let rightRect = CGRect(x: size.width, y: -wallThickness,
+                                   width: wallThickness, height: size.height + wallThickness * 2)
+            collision.addBoundary(withIdentifier: "right" as NSString, for: UIBezierPath(rect: rightRect))
 
             animator.addBehavior(collision)
             currentCollision = collision
