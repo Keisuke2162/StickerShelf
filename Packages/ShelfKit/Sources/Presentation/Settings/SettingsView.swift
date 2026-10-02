@@ -18,15 +18,30 @@ public struct SettingsView: View {
                 Section("書籍検索API") {
                     HStack {
                         if viewModel.isAPIKeyVisible {
-                            TextField("APIキー", text: $viewModel.apiKeyInput).textInputAutocapitalization(.never)
+                            TextField("APIキー", text: $viewModel.apiKeyInput)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .textContentType(.password)
                         } else {
                             SecureField("APIキー", text: $viewModel.apiKeyInput)
+                                .textContentType(.password)
                         }
                         Button(action: { viewModel.isAPIKeyVisible.toggle() }) {
                             Image(systemName: viewModel.isAPIKeyVisible ? "eye.slash" : "eye")
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(viewModel.isAPIKeyVisible ? "APIキーを隠す" : "APIキーを表示")
                     }
+                    PasteButton(payloadType: String.self) { strings in
+                        if let value = strings.first {
+                            Task { @MainActor in
+                                viewModel.apiKeyInput = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                            }
+                        }
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .buttonBorderShape(.capsule)
+                    .tint(ColorToken.accent)
                     switch viewModel.apiKeyStatus {
                     case .notSet:
                         Text("未設定").font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
