@@ -14,7 +14,7 @@ public struct MoveStickerUseCase: MoveStickerUseCaseProtocol {
 
     public func execute(id: BookID, placement: StickerPlacement) async throws {
         guard var book = try await books.fetch(id: id) else {
-            throw DomainError.catalogUnavailable(reason: "book not found")
+            throw DomainError.bookNotFound(id)
         }
         try book.moveSticker(to: placement)
         try await books.save(book)

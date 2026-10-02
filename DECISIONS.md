@@ -18,3 +18,7 @@
 - 2026-10-02: `BookRepository.changes()` は購読開始時に 1 回 Void を yield する。これで ViewModel は `for-await` ループ単独で初回ロードと以降の更新を扱える。
 - 2026-10-02: `InfoPlistAPIKeyProvider` が `Bundle.main` の `GoogleBooksAPIKey` キーを読み `APIKey?` を返す。`KeychainAPIKeyRepository` に fallback として注入し、Keychain 空のときだけ発火。
 - 2026-10-02: InfrastructureTests は `--no-parallel` 前提。`StubURLProtocol` が static 状態を共有するため、複数テストスイートの並列実行で干渉するのを避けるため。`verify.sh` も `--no-parallel` を使用。
+- 2026-10-02: 「本が見つからない」ケースは `DomainError.bookNotFound(BookID)` に専用化。`catalogUnavailable` はカタログ系（HTTP 5xx）に温存。
+- 2026-10-02: `LoadAPIKeyStatusUseCase` の戻り値は `APIKeyStatus { case notSet; case set(masked: String) }`。生 APIKey は Application 層の外（Presentation / 設定画面）には出さない。
+- 2026-10-02: 書影差し替えは `UpdateBookDetailUseCase` に合流させず、`ReplaceCoverImageUseCase` を独立で持つ。詳細モーダルの「保存」はドラフトのみを扱い、書影差し替えは別ボタン（即時反映）。
+- 2026-10-02: `BringStickerToFrontUseCase` の 10,000 超え詰め直しは、target 以外を `addedAt` 昇順で 1..n に、target を n+1 に。target は z 順の連続性より最前面を優先する。

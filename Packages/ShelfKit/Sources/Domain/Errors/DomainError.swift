@@ -7,6 +7,7 @@ public enum DomainError: Error, Equatable, Sendable {
     case pageOutOfRange
     case stickerNotAllowedForUnread
     case duplicateBook(BookID)
+    case bookNotFound(BookID)
     case catalogUnavailable(reason: String)
     case catalogQuotaExceeded
     case invalidAPIKey

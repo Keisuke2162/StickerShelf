@@ -29,6 +29,7 @@ public struct FetchPileUseCase: FetchPileUseCaseProtocol {
         let unread = all
             .filter { $0.status == .unread }
             .sorted { $0.addedAt < $1.addedAt }
+        // TsundokuStatistics.addedThisMonth は全ステータスを対象にするため all を渡す。
         let snapshot = statistics.snapshot(books: all, now: now)
         return FetchPileOutput(books: unread, statistics: snapshot)
     }

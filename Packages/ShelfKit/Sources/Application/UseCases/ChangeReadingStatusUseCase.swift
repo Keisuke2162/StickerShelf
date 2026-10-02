@@ -16,7 +16,7 @@ public struct ChangeReadingStatusUseCase: ChangeReadingStatusUseCaseProtocol {
 
     public func execute(id: BookID, newStatus: ReadingStatus, now: Date) async throws -> Book {
         guard var book = try await books.fetch(id: id) else {
-            throw DomainError.catalogUnavailable(reason: "book not found")
+            throw DomainError.bookNotFound(id)
         }
         let existingZ = try await books.fetch(status: [.reading, .finished])
             .compactMap(\.sticker)

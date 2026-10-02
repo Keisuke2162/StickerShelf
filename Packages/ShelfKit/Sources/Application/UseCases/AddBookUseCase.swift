@@ -73,38 +73,23 @@ public struct AddBookUseCase: AddBookUseCaseProtocol {
             throw DomainError.duplicateBook(existing.id)
         }
 
-        let existingZIndexes = try await books.fetch(status: [.reading, .finished])
-            .compactMap(\.sticker)
-            .map(\.zIndex)
-        let sticker: StickerPlacement? = input.initialStatus == .unread
-            ? nil
-            : placementFactory.make(existingZIndexes: existingZIndexes)
-
+        // いったん unread で作ってから、必要なら changeStatus でドメインルールを通す。
         var book = try Book(
             metadata: metadata,
-            status: input.initialStatus,
-            period: initialPeriod(status: input.initialStatus, now: input.now),
+            status: .unread,
             purchase: PurchaseInfo(purchasedAt: input.purchasedAt),
-            sticker: sticker,
             cover: cover,
             addedAt: input.now
         )
-        // 進捗の初期値（finished の場合は満ページ）を Book のドメインルールで整える。
-        if input.initialStatus == .finished, let total = metadata.pageCount {
-            try book.updateProgress(currentPage: total)
+        if input.initialStatus != .unread {
+            let existingZ = try await books.fetch(status: [.reading, .finished])
+                .compactMap(\.sticker)
+                .map(\.zIndex)
+            try book.changeStatus(to: input.initialStatus, on: input.now) {
+                placementFactory.make(existingZIndexes: existingZ)
+            }
         }
         try await books.save(book)
         return book
-    }
-
-    private func initialPeriod(status: ReadingStatus, now: Date) -> ReadingPeriod {
-        switch status {
-        case .unread:
-            return .init()
-        case .reading:
-            return ReadingPeriod(startedAt: now, finishedAt: nil)
-        case .finished:
-            return ReadingPeriod(startedAt: now, finishedAt: now)
-        }
     }
 }

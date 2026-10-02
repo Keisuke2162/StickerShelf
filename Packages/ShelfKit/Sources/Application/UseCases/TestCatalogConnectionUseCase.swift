@@ -6,7 +6,8 @@ public enum CatalogConnectionTestResult: Sendable, Equatable {
     case invalidAPIKey
     case quotaExceeded
     case networkUnavailable
-    case other(String)
+    case serviceUnavailable
+    case unknown
 }
 
 public protocol TestCatalogConnectionUseCaseProtocol: Sendable {
@@ -14,10 +15,18 @@ public protocol TestCatalogConnectionUseCaseProtocol: Sendable {
 }
 
 public struct TestCatalogConnectionUseCase: TestCatalogConnectionUseCaseProtocol {
+    /// Notion 04 で接続テスト用に推奨されている ISBN。
+    public static let defaultProbeISBN: ISBN = {
+        guard let isbn = ISBN("9784101010014") else {
+            fatalError("default probe ISBN is invalid — fix the source constant")
+        }
+        return isbn
+    }()
+
     private let catalog: BookCatalogRepository
     private let probeISBN: ISBN
 
-    public init(catalog: BookCatalogRepository, probeISBN: ISBN = ISBN("9784101010014").unsafelyUnwrapped) {
+    public init(catalog: BookCatalogRepository, probeISBN: ISBN = TestCatalogConnectionUseCase.defaultProbeISBN) {
         self.catalog = catalog
         self.probeISBN = probeISBN
     }
@@ -31,11 +40,11 @@ public struct TestCatalogConnectionUseCase: TestCatalogConnectionUseCaseProtocol
             case .invalidAPIKey: return .invalidAPIKey
             case .catalogQuotaExceeded: return .quotaExceeded
             case .network: return .networkUnavailable
-            case .catalogUnavailable(let reason): return .other(reason)
-            default: return .other(String(describing: error))
+            case .catalogUnavailable: return .serviceUnavailable
+            default: return .unknown
             }
         } catch {
-            return .other(error.localizedDescription)
+            return .unknown
         }
     }
 }

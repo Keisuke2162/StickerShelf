@@ -38,15 +38,9 @@ public struct UpdateBookDetailUseCase: UpdateBookDetailUseCaseProtocol {
 
     public func execute(id: BookID, draft: BookDetailDraft, now: Date) async throws -> Book {
         guard var book = try await books.fetch(id: id) else {
-            throw DomainError.catalogUnavailable(reason: "book not found")
+            throw DomainError.bookNotFound(id)
         }
-        // 期間と進捗はドメインの検証を通す。
-        try book.updatePeriod(startedAt: draft.startedAt, finishedAt: draft.finishedAt)
-        try book.updateProgress(currentPage: draft.currentPage)
-        book.updatePurchase(PurchaseInfo(purchasedAt: draft.purchasedAt, place: draft.purchasePlace))
-        book.updateMemo(draft.memo)
-        book.changeStickerEdge(draft.stickerEdge)
-
+        // 1. まずステータス遷移を適用（Book のドメインルールで補完）
         if book.status != draft.status {
             let existingZ = try await books.fetch(status: [.reading, .finished])
                 .compactMap(\.sticker)
@@ -55,7 +49,12 @@ public struct UpdateBookDetailUseCase: UpdateBookDetailUseCaseProtocol {
                 placementFactory.make(existingZIndexes: existingZ)
             }
         }
-
+        // 2. 次に draft の明示値で日付・進捗を上書き（ユーザーが入れた値を優先）
+        try book.updatePeriod(startedAt: draft.startedAt, finishedAt: draft.finishedAt)
+        try book.updateProgress(currentPage: draft.currentPage)
+        book.updatePurchase(PurchaseInfo(purchasedAt: draft.purchasedAt, place: draft.purchasePlace))
+        book.updateMemo(draft.memo)
+        book.changeStickerEdge(draft.stickerEdge)
         try await books.save(book)
         return book
     }

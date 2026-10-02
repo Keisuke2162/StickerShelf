@@ -90,3 +90,16 @@ STATUS: IN_PROGRESS
 - [x] [medium] FileCoverImageRepository の inFlight キャンセル伝搬対策（1購読者の cancel が全員を殺さない）。
 - [x] [medium] SwiftDataBookRepository.saveAll を一括フェッチに最適化。
 - [x] [medium] BookRepository.changes() の購読直後の初回 yield 挙動を明文化 or 実装（DECISIONS）。
+
+### Phase 3 (spec-reviewer, 2026-10-02)
+- [x] [high] AddBookUseCase の初期ステータス遷移ロジックが Book.changeStatus のドメインルールを再実装している。Book を unread で作ってから changeStatus 経由で `.reading/.finished` へ遷移させる。
+- [x] [high] TestCatalogConnectionUseCase のデフォルト probeISBN から `unsafelyUnwrapped` を除去。
+- [x] [high] 「本が見つからない」エラーを `.catalogUnavailable` から `DomainError.bookNotFound` に切替。UpdateBookDetail/ChangeReadingStatus/MoveSticker/ReplaceCoverImage で使用。
+- [x] [high] UpdateBookDetailUseCase の順序を「ステータス遷移 → 残りフィールド適用」に変更して order dependency を排除。
+- [x] [high] 欠落 UseCase テストを追加: FindCatalogBookByISBN / FetchShelf / FetchReadingCalendar / FetchBookDetail / MoveSticker / ReplaceCoverImage / DeleteBook / APIKey3種 / TestCatalogConnection。
+- [x] [medium] LoadAPIKeyStatusUseCase を `APIKeyStatus { case notSet; case set(masked:) }` 返却に変更して生キーを ViewModel に渡さない。
+- [x] [medium] APIKeyUseCases.swift を 3 ファイル（Save/Delete/Load）に分割。
+- [x] [medium] UpdateBookDetailUseCase に書影差し替えが無いことを DECISIONS に記録（別 UseCase で持つ）。
+- [x] [medium] FetchPileUseCase を `fetch(status: [.unread])` に変える（当月増加数は全件集計のため分離）。
+- [x] [medium] AddBook/UpdateBookDetail/ChangeReadingStatus で `fetch(status:[.reading,.finished])` を 3 回呼ぶのを BookRepository.maxShelfZIndex() を導入して一回に。
+

@@ -16,7 +16,7 @@ public struct ReplaceCoverImageUseCase: ReplaceCoverImageUseCaseProtocol {
 
     public func execute(id: BookID, imageData: Data) async throws -> Book {
         guard var book = try await books.fetch(id: id) else {
-            throw DomainError.catalogUnavailable(reason: "book not found")
+            throw DomainError.bookNotFound(id)
         }
         let old = book.cover
         let newCover = try await covers.saveUserImage(imageData)
