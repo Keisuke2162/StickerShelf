@@ -32,16 +32,20 @@ public struct SettingsView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(viewModel.isAPIKeyVisible ? "APIキーを隠す" : "APIキーを表示")
                     }
-                    PasteButton(payloadType: String.self) { strings in
-                        if let value = strings.first {
-                            Task { @MainActor in
-                                viewModel.apiKeyInput = value.trimmingCharacters(in: .whitespacesAndNewlines)
-                            }
+                    // PasteButton は Swift 6 strict concurrency で onPaste が cooperative queue
+                    // 上の `@Sendable` クロージャになり、@MainActor isolate した ViewModel への
+                    // 代入が executor assertion でクラッシュする。UIPasteboard を直接読む
+                    // 通常の Button に差し替える（action は MainActor で実行される）。
+                    Button {
+                        if let s = UIPasteboard.general.string {
+                            viewModel.apiKeyInput = s.trimmingCharacters(in: .whitespacesAndNewlines)
                         }
+                    } label: {
+                        Label("ペースト", systemImage: "doc.on.clipboard")
                     }
-                    .labelStyle(.titleAndIcon)
-                    .buttonBorderShape(.capsule)
+                    .buttonStyle(.borderless)
                     .tint(ColorToken.accent)
+                    .accessibilityLabel("クリップボードから貼り付け")
                     switch viewModel.apiKeyStatus {
                     case .notSet:
                         Text("未設定").font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
