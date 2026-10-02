@@ -35,16 +35,16 @@ STATUS: IN_PROGRESS
 - [x] ApplicationTests
 
 ### Phase 4：Presentation
-- [ ] DesignSystem：Color/Font トークン、`StickerView`（3種の縁）、`GeneratedCoverView`、`CoverImageView`（非同期）、チップ、セグメント
-- [ ] RootView ＋ カスタムタブバー ＋ Router ＋ AppContainer
-- [ ] 設定画面（APIキー・接続テスト・日本語限定トグル・ライセンス）
-- [ ] 本を追加（検索・ISBN・バーコード・手動登録・置き場所選択）
-- [ ] 本棚ボード（ジェスチャ：移動・拡縮・回転・最前面・長押しメニュー、フィルタ、貼るアニメ）
-- [ ] 積読（SpriteKit の山表示・リスト表示・集計・長押しメニュー）
-- [ ] 詳細モーダル（全項目編集・検証エラー表示・書影差し替え・削除）
-- [ ] カレンダー（月移動・書影表示・日付選択リスト・集計）
-- [ ] 各画面の空状態・読み込み中・エラー表示
-- [ ] DEBUG 用の起動引数（StartScreen / SeedSampleData / UseStubCatalog）対応
+- [x] DesignSystem：Color/Font トークン、`StickerView`（3種の縁）、`GeneratedCoverView`、`CoverImageView`（非同期）、チップ、セグメント
+- [x] RootView ＋ カスタムタブバー ＋ Router ＋ AppContainer
+- [x] 設定画面（APIキー・接続テスト・日本語限定トグル・ライセンス）
+- [x] 本を追加（検索・ISBN・バーコード・手動登録・置き場所選択）
+- [x] 本棚ボード（ジェスチャ：移動・拡縮・回転・最前面・長押しメニュー、フィルタ、貼るアニメ）
+- [x] 積読（SpriteKit の山表示・リスト表示・集計・長押しメニュー）
+- [x] 詳細モーダル（全項目編集・検証エラー表示・書影差し替え・削除）
+- [x] カレンダー（月移動・書影表示・日付選択リスト・集計）
+- [x] 各画面の空状態・読み込み中・エラー表示
+- [x] DEBUG 用の起動引数（StartScreen / SeedSampleData / UseStubCatalog）対応
 
 ### Phase 5：仕上げ
 - [ ] Reduce Motion 対応、VoiceOver ラベル、Dynamic Type 確認

@@ -3,15 +3,15 @@ import Presentation
 
 @main
 struct StickerShelfApp: App {
-    @State private var container: AppContainer
+    private let container: AppContainer
 
     init() {
-        _container = State(initialValue: AppContainer.makeDefault())
+        self.container = AppContainer.makeDefault()
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView(container: container)
+            RootView(container: container.presentation, startupOptions: container.startupOptions)
         }
     }
 }
