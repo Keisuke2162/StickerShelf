@@ -52,8 +52,12 @@ enum GoogleBooksMapper {
         if normalized.hasPrefix("http://") {
             normalized = "https://" + normalized.dropFirst("http://".count)
         }
-        normalized = normalized.replacingOccurrences(of: "&edge=curl", with: "")
-        return URL(string: normalized)
+        guard var components = URLComponents(string: normalized) else { return URL(string: normalized) }
+        if let items = components.queryItems {
+            let filtered = items.filter { $0.name != "edge" }
+            components.queryItems = filtered.isEmpty ? nil : filtered
+        }
+        return components.url
     }
 }
 

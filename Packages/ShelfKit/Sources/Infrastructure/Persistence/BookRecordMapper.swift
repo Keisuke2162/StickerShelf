@@ -1,24 +1,35 @@
 import Foundation
+import OSLog
 import Domain
+
+private let mapperLogger = Logger(subsystem: "StickerShelf", category: "BookRecordMapper")
 
 enum BookRecordMapper {
     static func toDomain(_ record: BookRecord) -> Book? {
-        guard let status = ReadingStatus(rawValue: record.statusRaw) else { return nil }
+        guard let status = ReadingStatus(rawValue: record.statusRaw) else {
+            mapperLogger.warning("Dropping record \(record.id, privacy: .public): unknown status \(record.statusRaw, privacy: .public)")
+            return nil
+        }
         let edge = StickerEdge(rawValue: record.stickerEdgeRaw) ?? .white
 
         let metadata: BookMetadata
         do {
+            // page_count が 0 以下だと BookMetadata が throw するため、保存値のゴミを吸収する。
+            let normalizedPage: Int? = (record.pageCount ?? 0) > 0 ? record.pageCount : nil
+            // タイトルが空のレコードはタイトル欠落として扱い、プレースホルダで救う。
+            let title = record.title.isEmpty ? "(無題)" : record.title
             metadata = try BookMetadata(
-                title: record.title,
+                title: title,
                 authors: record.authors,
                 publisher: record.publisher,
                 publishedDate: record.publishedDate,
-                pageCount: record.pageCount,
+                pageCount: normalizedPage,
                 isbn: record.isbnValue.flatMap(ISBN.init),
                 remoteCoverURL: record.remoteCoverURL,
                 catalogID: record.catalogID
             )
         } catch {
+            mapperLogger.error("Dropping record \(record.id, privacy: .public): metadata rebuild failed: \(String(describing: error), privacy: .public)")
             return nil
         }
 

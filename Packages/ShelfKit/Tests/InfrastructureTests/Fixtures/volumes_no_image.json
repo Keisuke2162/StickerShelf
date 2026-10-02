@@ -1,0 +1,16 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 1,
+  "items": [
+    {
+      "id": "vol-no-image",
+      "volumeInfo": {
+        "title": "画像なしの本",
+        "authors": ["著者"],
+        "industryIdentifiers": [
+          { "type": "ISBN_13", "identifier": "9784101010014" }
+        ]
+      }
+    }
+  ]
+}

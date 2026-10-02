@@ -46,4 +46,11 @@ struct GoogleBooksMapperTests {
         let result = GoogleBooksMapper.toCatalogSearchResult(dto, page: 0)
         #expect(result.books.first?.metadata.isbn?.value == "9784101010014")
     }
+
+    @Test func noImageVolume_hasNilCoverURL() throws {
+        let data = try FixtureLoader.data("volumes_no_image")
+        let dto = try JSONDecoder().decode(GoogleBooksVolumesResponseDTO.self, from: data)
+        let result = GoogleBooksMapper.toCatalogSearchResult(dto, page: 0)
+        #expect(result.books.first?.metadata.remoteCoverURL == nil)
+    }
 }

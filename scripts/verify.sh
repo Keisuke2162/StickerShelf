@@ -85,7 +85,7 @@ PKG_LOG="$ROOT/.verify-pkg.log"
 rm -f "$PKG_LOG"
 echo "==> ShelfKit swift test"
 pushd "$ROOT/Packages/ShelfKit" > /dev/null
-$XCRUN swift test --parallel > "$PKG_LOG" 2>&1
+$XCRUN swift test --no-parallel > "$PKG_LOG" 2>&1
 PKG_STATUS=$?
 popd > /dev/null
 

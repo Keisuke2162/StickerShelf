@@ -75,3 +75,18 @@ STATUS: IN_PROGRESS
 - [x] [medium] ISBN テストに lowercase x の 10 桁、979 プレフィックス 13 桁、X が末尾以外のパターンを追加。
 - [x] [medium] StickerPlacement の clamp 挙動を docstring に明記（復元時に値が動く可能性）。
 - [x] [low] DECISIONS に `→ unread 遷移時 progress もリセット` と `SearchPreferenceRepository を関数化（Sendable 対応）` を追記。
+
+### Phase 2 (spec-reviewer, 2026-10-02)
+- [x] [high] GoogleBooksClient の 429 / 5xx を指数バックオフで最大2回リトライ（0.5s, 1.5s）する実装。
+- [x] [high] GoogleBooksCatalogRepository.find(isbn:) で ISBN-13 空ヒット時に 978 プレフィックスの ISBN を ISBN-10 に変換して再検索。
+- [x] [high] BookRecordMapper.toDomain が破損レコードを silent drop するのを止め、Repository で検知して少なくともログ出力。
+- [x] [medium] BookRecord の非 optional フィールドにデフォルト値を付与 or optional 化（CloudKit 準備）。
+- [x] [medium] GoogleBooksErrorMapper の URLError 分岐を広げて .network に寄せる。
+- [x] [medium] KeychainAPIKeyRepository.save で update 時にも kSecAttrAccessible を含める。
+- [x] [medium] Secrets.xcconfig/Info.plist 経由の APIKey フォールバックの具体実装 (InfoPlistAPIKeyProvider) を追加。
+- [x] [medium] KeychainAPIKeyRepository のテスト（テスト用 service 名で save→load→delete, fallback 挙動）。
+- [x] [medium] GoogleBooksMapper 画像なしフィクスチャ検証、GoogleBooksCatalogRepository の統合テスト（langRestrict/startIndex/ISBN 検索）。
+- [x] [medium] &edge=curl 除去を URLComponents 経由に。
+- [x] [medium] FileCoverImageRepository の inFlight キャンセル伝搬対策（1購読者の cancel が全員を殺さない）。
+- [x] [medium] SwiftDataBookRepository.saveAll を一括フェッチに最適化。
+- [x] [medium] BookRepository.changes() の購読直後の初回 yield 挙動を明文化 or 実装（DECISIONS）。

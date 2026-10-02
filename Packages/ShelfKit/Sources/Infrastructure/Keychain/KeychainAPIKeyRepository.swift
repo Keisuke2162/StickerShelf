@@ -37,7 +37,10 @@ public struct KeychainAPIKeyRepository: APIKeyRepository {
     public func save(_ key: APIKey) throws {
         let data = Data(key.rawValue.utf8)
         var query = baseQuery()
-        let update: [String: Any] = [kSecValueData as String: data]
+        let update: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+        ]
         var status = SecItemUpdate(query as CFDictionary, update as CFDictionary)
         if status == errSecItemNotFound {
             query[kSecValueData as String] = data

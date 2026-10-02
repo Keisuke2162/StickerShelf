@@ -10,12 +10,9 @@ enum GoogleBooksErrorMapper {
     }
 
     static func map(urlError: URLError) -> DomainError {
-        switch urlError.code {
-        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .timedOut:
-            return .network
-        default:
-            return .catalogUnavailable(reason: urlError.localizedDescription)
-        }
+        // Notion 04「URLError（オフライン等）→ network」に従い、通信起因は原則 .network に寄せる。
+        // サーバー HTTP 応答由来は URLError にならないので、ここに来る時点でクライアント／ネットワーク側事情。
+        return .network
     }
 
     static func map(statusCode: Int, data: Data) -> DomainError {

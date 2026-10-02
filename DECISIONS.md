@@ -10,3 +10,11 @@
 - 2026-10-02: `TsundokuStatistics.addedThisMonth` は Notion 03 の「`addedAt` が当月」記述に素直に従い、ステータスでフィルタせず全書籍の addedAt が当月のものを数える。Pile 画面のラベルは「今月増えた n冊」。
 - 2026-10-02: `Book` の初期化は検証つき `init(throws)` と再構築用 `Book.reconstruct(...)` の 2 経路に分ける。再構築経路は SwiftData Mapper 側が正当性を担保する。
 - 2026-10-02: `StickerPlacement.init` は値を silently clamp する（Notion 03 の記載通り）。永続層からの復元で保存値が範囲外だと復元位置が動くため、Mapper で保存値の範囲検証を行うこと。
+- 2026-10-02: `GoogleBooksErrorMapper.map(urlError:)` は Notion 04 に合わせて URLError を全て `.network` に寄せる。サーバー HTTP 由来は URLError にならないので、ここに来た時点でクライアント／ネットワーク側の問題として扱う。
+- 2026-10-02: `BookRecordMapper.toDomain` は壊れたレコード（status 不正、タイトル空、pageCount <= 0）を可能な限り救済する。タイトル空は「(無題)」、pageCount 0 は nil 化。status 不正のみ silent drop（os.Logger に警告出力）。
+- 2026-10-02: SwiftData `BookRecord` の全フィールドにデフォルト値を付与。将来 CloudKit を有効にしたときのマイグレーション互換のため。
+- 2026-10-02: `GoogleBooksClient` の 429 / 5xx 時リトライは 0.5s → 1.5s の 2 回まで（Notion 04）。`retryDelays` を外部注入可能にし、テストで即時再試行を実現。
+- 2026-10-02: `GoogleBooksCatalogRepository.find(isbn:)` は ISBN-13 で 0 件のとき ISBN-10（978 プレフィックスから計算）に変換して再検索（Notion 04）。
+- 2026-10-02: `BookRepository.changes()` は購読開始時に 1 回 Void を yield する。これで ViewModel は `for-await` ループ単独で初回ロードと以降の更新を扱える。
+- 2026-10-02: `InfoPlistAPIKeyProvider` が `Bundle.main` の `GoogleBooksAPIKey` キーを読み `APIKey?` を返す。`KeychainAPIKeyRepository` に fallback として注入し、Keychain 空のときだけ発火。
+- 2026-10-02: InfrastructureTests は `--no-parallel` 前提。`StubURLProtocol` が static 状態を共有するため、複数テストスイートの並列実行で干渉するのを避けるため。`verify.sh` も `--no-parallel` を使用。

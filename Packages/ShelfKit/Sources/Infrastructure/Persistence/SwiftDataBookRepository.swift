@@ -64,8 +64,14 @@ public actor SwiftDataBookRepository: BookRepository {
     }
 
     public func saveAll(_ books: [Book]) async throws {
+        let ids = books.map { $0.id.rawValue }
+        let desc = FetchDescriptor<BookRecord>(predicate: #Predicate { ids.contains($0.id) })
+        let existing = try modelContext.fetch(desc)
+        var byID: [UUID: BookRecord] = [:]
+        for record in existing { byID[record.id] = record }
+
         for book in books {
-            if let existing = try fetchRecord(id: book.id) {
+            if let existing = byID[book.id.rawValue] {
                 BookRecordMapper.apply(book, to: existing)
             } else {
                 let record = BookRecordMapper.makeRecord(book)
@@ -85,7 +91,9 @@ public actor SwiftDataBookRepository: BookRepository {
     }
 
     public nonisolated func changes() -> AsyncStream<Void> {
-        changesSubject.stream()
+        // 購読開始時に 1 回 yield することで、ViewModel 側は for-await ループひとつで初回ロード
+        // + 以降の更新通知を扱える。
+        changesSubject.stream(initial: ())
     }
 
     // MARK: - Private
@@ -106,12 +114,15 @@ final class AsyncStreamSubject<Element: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
     private var state = State()
 
-    func stream() -> AsyncStream<Element> {
+    func stream(initial: Element? = nil) -> AsyncStream<Element> {
         AsyncStream { continuation in
             let token = UUID()
             lock.lock()
             state.continuations[token] = continuation
             lock.unlock()
+            if let initial {
+                continuation.yield(initial)
+            }
             continuation.onTermination = { [weak self] _ in
                 guard let self else { return }
                 self.lock.lock()
