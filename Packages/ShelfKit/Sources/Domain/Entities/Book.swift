@@ -8,11 +8,13 @@ public struct Book: Identifiable, Equatable, Sendable {
     public private(set) var progress: ReadingProgress
     public private(set) var purchase: PurchaseInfo
     public private(set) var memo: String
+    /// `status == .unread` のときに限り nil。他のステータスでは必ず値を持つ。
     public private(set) var sticker: StickerPlacement?
     public private(set) var stickerEdge: StickerEdge
     public private(set) var cover: CoverImage
     public let addedAt: Date
 
+    /// 新規作成用。不変条件を検証する。
     public init(
         id: BookID = BookID(),
         metadata: BookMetadata,
@@ -24,6 +26,68 @@ public struct Book: Identifiable, Equatable, Sendable {
         sticker: StickerPlacement? = nil,
         stickerEdge: StickerEdge = .white,
         cover: CoverImage = .none,
+        addedAt: Date
+    ) throws {
+        if (status == .unread) != (sticker == nil) {
+            throw DomainError.stickerNotAllowedForUnread
+        }
+        guard period.isValid() else { throw DomainError.invalidPeriod }
+        if let total = metadata.pageCount, progress.currentPage > total {
+            throw DomainError.pageOutOfRange
+        }
+        self.id = id
+        self.metadata = metadata
+        self.status = status
+        self.period = period
+        self.progress = progress
+        self.purchase = purchase
+        self.memo = memo
+        self.sticker = sticker
+        self.stickerEdge = stickerEdge
+        self.cover = cover
+        self.addedAt = addedAt
+    }
+
+    /// 永続層からの再構築用。既にアプリ内で生成済みのデータを信頼して載せ替えるときのみ使う。
+    public static func reconstruct(
+        id: BookID,
+        metadata: BookMetadata,
+        status: ReadingStatus,
+        period: ReadingPeriod,
+        progress: ReadingProgress,
+        purchase: PurchaseInfo,
+        memo: String,
+        sticker: StickerPlacement?,
+        stickerEdge: StickerEdge,
+        cover: CoverImage,
+        addedAt: Date
+    ) -> Book {
+        Book(
+            reconstructing: id,
+            metadata: metadata,
+            status: status,
+            period: period,
+            progress: progress,
+            purchase: purchase,
+            memo: memo,
+            sticker: sticker,
+            stickerEdge: stickerEdge,
+            cover: cover,
+            addedAt: addedAt
+        )
+    }
+
+    private init(
+        reconstructing id: BookID,
+        metadata: BookMetadata,
+        status: ReadingStatus,
+        period: ReadingPeriod,
+        progress: ReadingProgress,
+        purchase: PurchaseInfo,
+        memo: String,
+        sticker: StickerPlacement?,
+        stickerEdge: StickerEdge,
+        cover: CoverImage,
         addedAt: Date
     ) {
         self.id = id
@@ -39,47 +103,53 @@ public struct Book: Identifiable, Equatable, Sendable {
         self.addedAt = addedAt
     }
 
-    /// ステータス遷移。
-    /// - 要件:
-    ///   - unread → reading/finished：`placement()` で新しい配置を生成する
-    ///   - → unread：期間とステッカーをクリアする
-    ///   - → reading：`startedAt ??= today`
-    ///   - → finished：`finishedAt ??= today`、`startedAt ??= finishedAt`、`pageCount` があれば `currentPage = pageCount`
+    // MARK: - Behaviors
+
+    /// ステータス遷移。遷移先に応じた期間・進捗・ステッカーの補完を行い、
+    /// 検証を通ったあとにまとめて自身を書き換える（失敗時は副作用なし）。
     public mutating func changeStatus(
         to new: ReadingStatus,
         on today: Date,
         placement: () -> StickerPlacement
     ) throws {
         let old = status
-        status = new
+        var nextPeriod = period
+        var nextProgress = progress
+        var nextSticker = sticker
 
         switch new {
         case .unread:
-            period = .init()
-            progress = .init()
-            sticker = nil
+            nextPeriod = .init()
+            nextProgress = .init()
+            nextSticker = nil
         case .reading:
-            if period.startedAt == nil {
-                period.startedAt = today
+            if nextPeriod.startedAt == nil {
+                nextPeriod.startedAt = today
             }
             if old == .unread {
-                sticker = placement()
+                nextSticker = placement()
             }
         case .finished:
-            if period.finishedAt == nil {
-                period.finishedAt = today
+            if nextPeriod.finishedAt == nil {
+                nextPeriod.finishedAt = today
             }
-            if period.startedAt == nil {
-                period.startedAt = period.finishedAt
+            if nextPeriod.startedAt == nil {
+                nextPeriod.startedAt = nextPeriod.finishedAt
             }
             if let total = metadata.pageCount {
-                progress = ReadingProgress(currentPage: total)
+                nextProgress = ReadingProgress(currentPage: total)
             }
             if old == .unread {
-                sticker = placement()
+                nextSticker = placement()
             }
-            guard period.isValid() else { throw DomainError.invalidPeriod }
         }
+
+        guard nextPeriod.isValid() else { throw DomainError.invalidPeriod }
+
+        self.status = new
+        self.period = nextPeriod
+        self.progress = nextProgress
+        self.sticker = nextSticker
     }
 
     public mutating func updatePeriod(startedAt: Date?, finishedAt: Date?) throws {

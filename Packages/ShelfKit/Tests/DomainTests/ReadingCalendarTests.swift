@@ -12,7 +12,8 @@ struct ReadingCalendarTests {
 
     private func finishedBook(on date: Date, title: String) throws -> Book {
         let meta = try BookMetadata(title: title)
-        var book = Book(metadata: meta, status: .finished, addedAt: date)
+        let sticker = StickerPlacement(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1)
+        var book = try Book(metadata: meta, status: .finished, period: ReadingPeriod(startedAt: date, finishedAt: date), sticker: sticker, addedAt: date)
         try book.updatePeriod(startedAt: date, finishedAt: date)
         return book
     }
@@ -40,9 +41,14 @@ struct ReadingCalendarTests {
     @Test func ignoresUnfinishedBooks() throws {
         let d1 = calendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
         let meta = try BookMetadata(title: "進行中")
-        let book = Book(metadata: meta, status: .reading, addedAt: d1)
+        let sticker = StickerPlacement(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1)
+        let book = try Book(metadata: meta, status: .reading, period: ReadingPeriod(startedAt: d1), sticker: sticker, addedAt: d1)
         let summary = ReadingCalendar(calendar: calendar).summary(books: [book], year: 2026, month: 10)
         #expect(summary.monthCount == 0)
         #expect(summary.booksByDay.isEmpty)
+    }
+
+    @Test func firstWeekdayIsSunday() {
+        #expect(ReadingCalendar(calendar: calendar).calendar.firstWeekday == 1)
     }
 }

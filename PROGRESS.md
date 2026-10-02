@@ -64,3 +64,14 @@ STATUS: IN_PROGRESS
 - [ ] 全テストが通り、Swift 6 の警告がゼロ
 
 ## レビュー指摘
+
+### Phase 1 (spec-reviewer, 2026-10-02)
+- [x] [high] `Book.changeStatus` が検証前に `status`/`sticker`/`progress` を代入してから `period.isValid()` で throw するため、失敗時に副作用が残る。候補値をローカルで組み立て、全検証通過後にまとめて self に代入する。
+- [x] [high] reading→finished で `startedAt > today` のとき `finishedAt=today` 自動補完 → invalidPeriod を throw するが book は status だけ変わる。候補 period で検証後に代入する実装にし、「status は reading のまま」のテストを追加。
+- [x] [medium] `Book.init` が `(status == .unread) == (sticker == nil)` の不変条件を検証していない。再構築用も含めて不整合データを拒否するか、構築経路を分ける。
+- [x] [medium] `ReadingProgress.init(currentPage:)` が負値を黙って 0 に丸める。`Book.updateProgress` と挙動が食い違うので `init?` または throws にする。
+- [x] [medium] `TsundokuStatistics.addedThisMonth` が unread のみを対象にしており Notion 03 の記述（status 絞らず addedAt が当月）と差異。仕様をどちらに寄せ、テストを揃える。
+- [x] [medium] Book のステータス遷移テストに finished→reading / finished→unread / unread→finished で既存 finishedAt あり / reading→finished で startedAt が未来 / pageCount=nil で finished / moveSticker 成功ケースが不足。
+- [x] [medium] ISBN テストに lowercase x の 10 桁、979 プレフィックス 13 桁、X が末尾以外のパターンを追加。
+- [x] [medium] StickerPlacement の clamp 挙動を docstring に明記（復元時に値が動く可能性）。
+- [x] [low] DECISIONS に `→ unread 遷移時 progress もリセット` と `SearchPreferenceRepository を関数化（Sendable 対応）` を追記。

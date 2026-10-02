@@ -33,8 +33,9 @@ public struct TsundokuStatistics: Sendable {
         }
         let average = daysList.isEmpty ? 0 : Int((Double(daysList.reduce(0, +)) / Double(daysList.count)).rounded())
 
+        // 「今月増えた」は Notion 03 の記述に従い status でフィルタせず addedAt が当月のものを数える。
         let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
-        let addedThisMonth = unread.filter { book in
+        let addedThisMonth = books.filter { book in
             book.addedAt >= monthStart
         }.count
 
