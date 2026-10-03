@@ -84,8 +84,7 @@ public struct AddBookView: View {
                 ManualEntryView { entry in
                     Task {
                         if await viewModel.addManual(entry: entry) != nil {
-                            router.selectedTab = .board
-                            router.boardMode = viewModel.destination == .pile ? .pile : .shelf
+                            router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
                             showManualEntry = false
                             dismiss()
                         }
@@ -238,8 +237,7 @@ public struct AddBookView: View {
         return Button {
             Task {
                 if await viewModel.addSelected() != nil {
-                    router.selectedTab = .board
-                    router.boardMode = viewModel.destination == .pile ? .pile : .shelf
+                    router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
                     dismiss()
                 }
             }

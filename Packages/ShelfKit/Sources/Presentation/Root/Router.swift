@@ -7,18 +7,13 @@ import Domain
 @Observable
 public final class Router {
     public enum Tab: Hashable {
-        case board
+        case shelf
+        case pile
         case calendar
         case settings
     }
 
-    public enum BoardMode: Hashable {
-        case shelf
-        case pile
-    }
-
-    public var selectedTab: Tab = .board
-    public var boardMode: BoardMode = .shelf
+    public var selectedTab: Tab = .shelf
     public var detailBookID: BookID?
     public var isAddingBook: Bool = false
 

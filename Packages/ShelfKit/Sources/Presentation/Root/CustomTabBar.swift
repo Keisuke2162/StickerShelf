@@ -15,14 +15,15 @@ struct CustomTabBar: View {
                 )
                 .shadow(color: ColorToken.ink.opacity(0.04), radius: 8, y: -2)
 
-            // 4 列均等グリッド: ボード / カレンダー / (中央 ＋ スロット) / 設定
+            // 5 列均等グリッド: 本棚 / 積読 / (中央 ＋ スロット) / カレンダー / 設定
             HStack(spacing: 0) {
-                tabButton(title: "ボード", icon: "square.on.square", tab: .board).frame(maxWidth: .infinity)
-                tabButton(title: "カレンダー", icon: "calendar", tab: .calendar).frame(maxWidth: .infinity)
+                tabButton(title: "本棚", icon: "square.on.square", tab: .shelf).frame(maxWidth: .infinity)
+                tabButton(title: "積読", icon: "square.stack.3d.down.right", tab: .pile).frame(maxWidth: .infinity)
                 Color.clear.frame(maxWidth: .infinity).frame(height: 44)
+                tabButton(title: "カレンダー", icon: "calendar", tab: .calendar).frame(maxWidth: .infinity)
                 tabButton(title: "設定", icon: "gearshape", tab: .settings).frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .padding(.bottom, 12)
 
             Button {
@@ -50,7 +51,7 @@ struct CustomTabBar: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 22, weight: selected ? .bold : .regular))
+                    .font(.system(size: 20, weight: selected ? .bold : .regular))
                 Text(title)
                     .font(FontToken.tabLabel(selected: selected))
             }

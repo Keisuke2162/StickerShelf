@@ -15,6 +15,7 @@ struct StickerDraggable: View {
     @GestureState private var rotate: Angle = .zero
     @State private var popScale: CGFloat = 1
     @State private var hasBroughtToFront = false
+    @State private var isActivelyGesturing = false
 
     private let baseSize = CGSize(width: 62, height: 90)
 
@@ -38,6 +39,7 @@ struct StickerDraggable: View {
 
     var body: some View {
         let center = CGPoint(x: placement.x * boardSize.width, y: placement.y * boardSize.height)
+        let isMoving = dragOffset != .zero || magnify != 1 || rotate != .zero
 
         StickerView(
             cover: book.cover,
@@ -46,8 +48,9 @@ struct StickerDraggable: View {
             size: baseSize,
             loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
         )
-        .scaleEffect(liveScale * popScale)
+        .scaleEffect((isMoving ? liveScale * 1.05 : liveScale) * popScale)
         .rotationEffect(.degrees(liveRotation))
+        .shadow(color: ColorToken.ink.opacity(isMoving ? 0.3 : 0), radius: isMoving ? 14 : 0, y: isMoving ? 14 : 0)
         .position(x: center.x + dragOffset.width, y: center.y + dragOffset.height)
         .onTapGesture {
             router.detailBookID = book.id
@@ -57,41 +60,25 @@ struct StickerDraggable: View {
             Button("積読に戻す") { Task { await viewModel.returnToPile(id: book.id) } }
             Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
         }
+        // ドラッグは「指が 4pt 以上動いたら」発火。これより小さい動きは onTapGesture が拾う。
         .gesture(
-            DragGesture(minimumDistance: 0)
+            DragGesture(minimumDistance: 4)
                 .updating($dragOffset) { value, state, _ in
                     state = value.translation
                 }
-                .onChanged { _ in
-                    bringToFrontOnce()
-                }
+                .onChanged { _ in bringToFrontOnce() }
                 .onEnded { _ in
-                    let next = StickerPlacement(
-                        x: liveX, y: liveY,
-                        rotationDegrees: liveRotation,
-                        scale: liveScale,
-                        zIndex: placement.zIndex
-                    )
-                    hasBroughtToFront = false
-                    Task { await viewModel.didEndGesture(id: book.id, placement: next) }
+                    persistCurrent()
                 }
         )
+        // ピンチ・回転は 2 本指なのでドラッグと競合しない。.simultaneousGesture で同時成立。
         .simultaneousGesture(
             MagnifyGesture()
                 .updating($magnify) { value, state, _ in
                     state = value.magnification
                 }
                 .onChanged { _ in bringToFrontOnce() }
-                .onEnded { _ in
-                    let next = StickerPlacement(
-                        x: liveX, y: liveY,
-                        rotationDegrees: liveRotation,
-                        scale: liveScale,
-                        zIndex: placement.zIndex
-                    )
-                    hasBroughtToFront = false
-                    Task { await viewModel.didEndGesture(id: book.id, placement: next) }
-                }
+                .onEnded { _ in persistCurrent() }
         )
         .simultaneousGesture(
             RotateGesture()
@@ -99,16 +86,7 @@ struct StickerDraggable: View {
                     state = value.rotation
                 }
                 .onChanged { _ in bringToFrontOnce() }
-                .onEnded { _ in
-                    let next = StickerPlacement(
-                        x: liveX, y: liveY,
-                        rotationDegrees: liveRotation,
-                        scale: liveScale,
-                        zIndex: placement.zIndex
-                    )
-                    hasBroughtToFront = false
-                    Task { await viewModel.didEndGesture(id: book.id, placement: next) }
-                }
+                .onEnded { _ in persistCurrent() }
         )
         .onAppear {
             if viewModel.popAnimationIDs.contains(book.id) && !UIAccessibility.isReduceMotionEnabled {
@@ -126,6 +104,17 @@ struct StickerDraggable: View {
         guard !hasBroughtToFront else { return }
         hasBroughtToFront = true
         Task { await viewModel.didTouchSticker(id: book.id) }
+    }
+
+    private func persistCurrent() {
+        let next = StickerPlacement(
+            x: liveX, y: liveY,
+            rotationDegrees: liveRotation,
+            scale: liveScale,
+            zIndex: placement.zIndex
+        )
+        hasBroughtToFront = false
+        Task { await viewModel.didEndGesture(id: book.id, placement: next) }
     }
 }
 

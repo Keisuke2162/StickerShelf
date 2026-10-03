@@ -18,13 +18,6 @@ public struct PileView: View {
     public var body: some View {
         VStack(spacing: 12) {
             header
-            SegmentedSwitch(
-                options: [
-                    .init(id: Router.BoardMode.shelf, title: "本棚"),
-                    .init(id: Router.BoardMode.pile, title: "積読", badge: viewModel.books.count)
-                ],
-                selection: Binding(get: { router.boardMode }, set: { router.boardMode = $0 })
-            )
             stats
             if viewModel.display == .pile {
                 pileBoard
@@ -37,8 +30,8 @@ public struct PileView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ColorToken.pileBackground.ignoresSafeArea())
         .task { await viewModel.reload() }
-        .task(id: router.boardMode) {
-            if router.boardMode == .pile { await viewModel.start() }
+        .task(id: router.selectedTab) {
+            if router.selectedTab == .pile { await viewModel.start() }
         }
         .task(id: viewModel.books) {
             await refreshItems()
@@ -59,7 +52,7 @@ public struct PileView: View {
 
     private var header: some View {
         HStack {
-            Text("本棚")
+            Text("積読")
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
             Spacer()

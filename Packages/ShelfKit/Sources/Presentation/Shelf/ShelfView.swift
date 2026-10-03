@@ -19,7 +19,6 @@ public struct ShelfView: View {
     public var body: some View {
         VStack(spacing: 12) {
             header
-            segment
             boardChips
             board
         }
@@ -28,8 +27,8 @@ public struct ShelfView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ColorToken.boardBackground.ignoresSafeArea())
         .task { await viewModel.reload() }
-        .task(id: router.boardMode) {
-            if router.boardMode == .shelf { await viewModel.start() }
+        .task(id: router.selectedTab) {
+            if router.selectedTab == .shelf { await viewModel.start() }
         }
         .alert("新しい本棚を作成", isPresented: $showCreateBoard) {
             TextField("本棚の名前", text: $newBoardName)
@@ -85,18 +84,6 @@ public struct ShelfView: View {
         }
     }
 
-    private var segment: some View {
-        SegmentedSwitch(
-            options: [
-                .init(id: Router.BoardMode.shelf, title: "本棚 \(viewModel.books.count)"),
-                .init(id: Router.BoardMode.pile, title: "積読", badge: viewModel.pileCount)
-            ],
-            selection: Binding(
-                get: { router.boardMode },
-                set: { router.boardMode = $0 }
-            )
-        )
-    }
 
     private var boardChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -146,7 +133,7 @@ public struct ShelfView: View {
                     }
                 } else if viewModel.books.isEmpty && !viewModel.isLoading {
                     EmptyShelfPlaceholder {
-                        router.boardMode = .pile
+                        router.selectedTab = .pile
                     } onAdd: {
                         router.isAddingBook = true
                     }

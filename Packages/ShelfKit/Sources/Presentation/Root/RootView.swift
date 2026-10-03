@@ -42,12 +42,10 @@ public struct RootView: View {
     @ViewBuilder
     private var content: some View {
         switch router.selectedTab {
-        case .board:
-            if router.boardMode == .shelf {
-                ShelfView(container: container, router: router)
-            } else {
-                PileView(container: container, router: router)
-            }
+        case .shelf:
+            ShelfView(container: container, router: router)
+        case .pile:
+            PileView(container: container, router: router)
         case .calendar:
             CalendarView(container: container, router: router)
         case .settings:
@@ -59,11 +57,9 @@ public struct RootView: View {
         guard let screen = startupOptions.startScreen else { return }
         switch screen {
         case .shelf:
-            router.selectedTab = .board
-            router.boardMode = .shelf
+            router.selectedTab = .shelf
         case .pile:
-            router.selectedTab = .board
-            router.boardMode = .pile
+            router.selectedTab = .pile
         case .calendar:
             router.selectedTab = .calendar
         case .settings:
@@ -71,9 +67,7 @@ public struct RootView: View {
         case .add:
             router.isAddingBook = true
         case .detail:
-            router.selectedTab = .board
-            router.boardMode = .shelf
-            // 詳細は本が1冊でもあればそれを表示。無ければ何もしない。
+            router.selectedTab = .shelf
             Task {
                 let boards = (try? await container.fetchBoards.execute()) ?? []
                 for board in boards {
