@@ -18,6 +18,16 @@ STATUS: DONE
 - `scripts/verify.sh`: App 3 tests + ShelfKit パッケージ、ビルド・テスト成功・警告ゼロ
 - 新規テスト: `SwiftDataBoardRepositoryTests`（kind ラウンドトリップ・絞り込み・レガシーレコード）、`FetchPileUseCaseTests.filtersByBoardID_whenSpecified`、`BookRecordMapperTests.unreadBookKeepsBoardID`
 
+## 追加依頼: カメラで書影を自動取り込み（2026-10-04）
+
+### 内容
+- `DocumentScannerView`（VisionKit の `VNDocumentCameraViewController` ラッパ）を新設し、BookDetailSheet から `.fullScreenCover` でカメラを起動
+- 四角検出・遠近補正・エッジ強調まで VisionKit に任せ、戻り値の 1 ページ目を JPEG にして `ReplaceCoverImageUseCase` に渡す
+- 既存のアルバム導線は残し、「カメラで撮影／アルバムから」の 2 列ボタン構成に
+
+### 検証
+- `scripts/verify.sh` 緑（カメラ機能は実機でのみ動作、ビルド整合性のみ確認）
+
 ## 最終報告（2026-10-03）
 
 ### 成果物

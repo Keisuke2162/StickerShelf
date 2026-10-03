@@ -10,6 +10,7 @@ public struct BookDetailSheet: View {
     @State private var viewModel: BookDetailViewModel
     @State private var showDeleteConfirm = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var showDocumentScanner = false
     @Environment(\.dismiss) private var dismiss
 
     public init(container: PresentationContainer, bookID: BookID, router: Router) {
@@ -80,6 +81,19 @@ public struct BookDetailSheet: View {
                     await viewModel.replaceCover(data: data)
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showDocumentScanner) {
+            DocumentScannerView(
+                onCapture: { image in
+                    showDocumentScanner = false
+                    // VisionKit は四角検出 + 遠近補正済みの UIImage を返すので、そのまま JPEG で保存。
+                    if let data = image.jpegData(compressionQuality: 0.9) {
+                        Task { await viewModel.replaceCover(data: data) }
+                    }
+                },
+                onCancel: { showDocumentScanner = false }
+            )
+            .ignoresSafeArea()
         }
         .alert(
             "保存に失敗しました",
@@ -233,13 +247,29 @@ public struct BookDetailSheet: View {
     }
 
     private func coverReplace() -> some View {
-        PhotosPicker(selection: $pickerItem, matching: .images) {
-            Label("書影を差し替え", systemImage: "photo.on.rectangle")
-                .font(FontToken.sectionTitle())
-                .foregroundStyle(ColorToken.ink)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity)
-                .background(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1.5))
+        HStack(spacing: 8) {
+            Button {
+                showDocumentScanner = true
+            } label: {
+                Label("カメラで撮影", systemImage: "camera.viewfinder")
+                    .font(FontToken.sectionTitle())
+                    .foregroundStyle(ColorToken.ink)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("カメラで書影を撮影")
+
+            PhotosPicker(selection: $pickerItem, matching: .images) {
+                Label("アルバムから", systemImage: "photo.on.rectangle")
+                    .font(FontToken.sectionTitle())
+                    .foregroundStyle(ColorToken.ink)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1.5))
+            }
+            .accessibilityLabel("アルバムから書影を選ぶ")
         }
     }
 
