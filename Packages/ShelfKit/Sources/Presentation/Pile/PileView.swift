@@ -180,13 +180,6 @@ public struct PileView: View {
                     .font(FontToken.bodyRegular())
                     .foregroundStyle(ColorToken.inkSecondary)
                     .padding(.top, 40)
-            } else {
-                Text("長押しで「読み始める」→ 本棚に貼られます")
-                    .font(FontToken.caption())
-                    .foregroundStyle(ColorToken.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Capsule().fill(ColorToken.ink.opacity(0.08)))
-                    .padding(.top, 8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

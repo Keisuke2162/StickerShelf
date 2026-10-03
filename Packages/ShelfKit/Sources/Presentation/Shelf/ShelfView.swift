@@ -133,8 +133,6 @@ public struct ShelfView: View {
                     }
                 } else if viewModel.books.isEmpty && !viewModel.isLoading {
                     EmptyShelfPlaceholder {
-                        router.selectedTab = .pile
-                    } onAdd: {
                         router.isAddingBook = true
                     }
                 }
@@ -176,24 +174,13 @@ private struct DotGridBackground: View {
 }
 
 private struct EmptyShelfPlaceholder: View {
-    let onPile: () -> Void
     let onAdd: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("まだ本が貼られていません")
-                .font(FontToken.bodyRegular())
-                .foregroundStyle(ColorToken.inkSecondary)
-            HStack(spacing: 12) {
-                Button("積読から読み始める", action: onPile)
-                    .buttonStyle(.borderedProminent)
-                    .tint(ColorToken.accent)
-                Button("＋ 追加", action: onAdd)
-                    .buttonStyle(.bordered)
-                    .tint(ColorToken.ink)
-            }
-        }
-        .padding()
+        Button("＋ 追加", action: onAdd)
+            .buttonStyle(.bordered)
+            .tint(ColorToken.ink)
+            .padding()
     }
 }
 
