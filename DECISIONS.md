@@ -39,3 +39,4 @@
 - 2026-10-04: `AppContainer.ensureDefaultBoards` を「空ストア時のみ発火」から「不足分だけ補充（冪等）」に変更。片方の既定ボードを削除された後も次回起動で復活する。
 - 2026-10-04: 書影の描画を `.aspectRatio(contentMode: .fill)` / `.scaleAspectFill` / `.scaledToFill` から軒並み `.fit` 相当に変更し、画像本来の縦横比を保つように修正（`CoverImageView` / `PileDynamicsView.CoverCell` / `ManualEntryView.coverPreview`）。親フレームと比が異なる場合は親の背景色が余白として見える（StickerView の白フチや PileDynamicsView のセル背景が自然に受け止める）。`GeneratedCoverView`（画像なし本の生成カバー）はデザイン上枠を埋める前提なので fit に切り替えず従来通り。
 - 2026-10-04: 積読セルの向き (`isVertical`) を、画像があるときは実アスペクト比から判定（`height >= width` なら縦長）、無いときのみ従来の `BookID` ハッシュ fallback に変更。手動撮影した縦長の本が偶然横長セルに入ってしまうバグを解消。
+- 2026-10-04: 積読セルを「縦長 52×74 / 横長 74×52」の 2 択丸めから、書影の実アスペクト比に沿った可変サイズに変更。`PileDynamicsView.Item.isVertical: Bool` を廃止し `size: CGSize` を直接持たせる構造に。長辺 74pt 固定・短辺は 36〜74pt にクランプ。UIKit Dynamics は `UIView.frame` ベースで衝突判定するためサイズ可変でもシミュレーションは安定、計算コストは画像サイズ参照のみで既存の `UIImage(data:)` 変換の延長。画像なし本は縦長 52×74 を既定とし、落ちもののバリエーション維持のため BookID 下位 1 割だけ横長 74×52 を混ぜる。

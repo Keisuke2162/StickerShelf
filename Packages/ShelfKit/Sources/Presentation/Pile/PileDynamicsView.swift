@@ -11,12 +11,8 @@ struct PileDynamicsView: UIViewRepresentable {
     struct Item: Equatable, Sendable {
         let id: BookID
         let title: String
-        let isVertical: Bool
+        let size: CGSize
         let imageData: Data?
-
-        var size: CGSize {
-            isVertical ? CGSize(width: 52, height: 74) : CGSize(width: 74, height: 52)
-        }
     }
 
     let items: [Item]

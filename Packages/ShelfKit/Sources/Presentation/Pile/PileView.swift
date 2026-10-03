@@ -190,18 +190,32 @@ public struct PileView: View {
         out.reserveCapacity(viewModel.books.count)
         for book in viewModel.books {
             let data = (try? await container.coverImages.imageData(for: book.cover)) ?? nil
-            // 画像があればその実比でセルの向きを決める（撮影した縦長の本は縦長セルに入れる）。
-            // 画像が無い場合のみ BookID から決定論的に振り分けて、落ちもののバリエーションを出す。
-            let isVertical: Bool
-            if let data, let image = UIImage(data: data) {
-                isVertical = image.size.height >= image.size.width
-            } else {
-                let firstByte = book.id.rawValue.uuid.0
-                isVertical = (firstByte % 10) < 6
-            }
-            out.append(.init(id: book.id, title: book.metadata.title, isVertical: isVertical, imageData: data))
+            let size = pileCellSize(for: data, bookID: book.id)
+            out.append(.init(id: book.id, title: book.metadata.title, size: size, imageData: data))
         }
         pileItems = out
+    }
+
+    /// 書影の実アスペクト比に沿って、積読セルのサイズを決める。
+    /// 長辺 74pt 固定・短辺は実比に合わせて 36pt〜74pt にクランプ。
+    /// 画像が無い本は従来の縦長 52×74 fallback（落ちもののバリエーション維持のため、
+    /// BookID の下位ビットで 1 割だけ横長 74×52 に振る）。
+    private func pileCellSize(for data: Data?, bookID: BookID) -> CGSize {
+        let longEdge: CGFloat = 74
+        let minShortEdge: CGFloat = 36
+        if let data, let image = UIImage(data: data), image.size.width > 0, image.size.height > 0 {
+            let w = image.size.width
+            let h = image.size.height
+            if h >= w {
+                let short = max(minShortEdge, min(longEdge, longEdge * (w / h)))
+                return CGSize(width: short, height: longEdge)
+            } else {
+                let short = max(minShortEdge, min(longEdge, longEdge * (h / w)))
+                return CGSize(width: longEdge, height: short)
+            }
+        }
+        let firstByte = bookID.rawValue.uuid.0
+        return (firstByte % 10) < 9 ? CGSize(width: 52, height: 74) : CGSize(width: 74, height: 52)
     }
 
     private var listView: some View {
