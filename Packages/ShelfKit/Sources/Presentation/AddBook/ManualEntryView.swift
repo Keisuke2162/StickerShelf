@@ -104,8 +104,9 @@ public struct ManualEntryView: View {
         if let data = coverImageData, let uiImage = UIImage(data: data) {
             Image(uiImage: uiImage)
                 .resizable()
-                .scaledToFill()
-                .frame(width: 80, height: 116)
+                .scaledToFit()
+                .frame(maxWidth: 80, maxHeight: 116)
+                .background(ColorToken.surfaceMuted)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(ColorToken.hairline, lineWidth: 1))
         } else {

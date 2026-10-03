@@ -20,10 +20,14 @@ public struct CoverImageView: View {
     public var body: some View {
         Group {
             if let data = imageData, let image = UIImage(data: data) {
+                // 書影本来の縦横比を維持して表示する（親の枠に対して fit）。
+                // 画像の比と親フレームの比が異なる場合は、親の背景（白フチ or 空）が余白として見える。
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                // 生成カバー（画像なし）は枠を埋めて成立するデザイン前提なので、ここだけ従来通り埋める。
                 GeneratedCoverView(title: title)
             }
         }

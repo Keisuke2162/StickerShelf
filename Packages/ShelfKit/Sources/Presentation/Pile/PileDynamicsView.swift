@@ -230,7 +230,8 @@ struct PileDynamicsView: UIViewRepresentable {
             layer.shadowRadius = 3
             layer.shadowOffset = CGSize(width: 0, height: 2)
 
-            imageView.contentMode = .scaleAspectFill
+            // 書影本来の縦横比を維持。セルの比と画像の比が違う場合は、セル背景（白）が余白として見える。
+            imageView.contentMode = .scaleAspectFit
             imageView.clipsToBounds = true
             imageView.translatesAutoresizingMaskIntoConstraints = false
             addSubview(imageView)
