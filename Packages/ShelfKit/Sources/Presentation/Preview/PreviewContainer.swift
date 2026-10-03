@@ -9,10 +9,12 @@ import Application
 public enum PreviewSupport {
     @MainActor
     public static func makeContainer() -> PresentationContainer {
-        let readingBoard = (try? Board(name: "読んでる", createdAt: Date(), sortOrder: 1))!
-        let finishedBoard = (try? Board(name: "読んだ", createdAt: Date(), sortOrder: 2))!
-        let repository = PreviewBookRepository(initial: sampleBooks(readingBoardID: readingBoard.id, finishedBoardID: finishedBoard.id))
-        let boardRepo = PreviewBoardRepository(initial: [readingBoard, finishedBoard])
+        let readingBoard = (try? Board(kind: .shelf, name: "読んでる", createdAt: Date(), sortOrder: 1))!
+        let finishedBoard = (try? Board(kind: .shelf, name: "読んだ", createdAt: Date(), sortOrder: 2))!
+        let laterBoard = (try? Board(kind: .pile, name: "あとで読む", createdAt: Date(), sortOrder: 3))!
+        let mangaBoard = (try? Board(kind: .pile, name: "漫画", createdAt: Date(), sortOrder: 4))!
+        let repository = PreviewBookRepository(initial: sampleBooks(readingBoardID: readingBoard.id, finishedBoardID: finishedBoard.id, pileBoardIDs: [laterBoard.id, mangaBoard.id]))
+        let boardRepo = PreviewBoardRepository(initial: [readingBoard, finishedBoard, laterBoard, mangaBoard])
         let catalog = PreviewCatalogRepository()
         let apiKeys = PreviewAPIKeyRepository()
         let covers = PreviewCoverImageRepository()
@@ -46,7 +48,7 @@ public enum PreviewSupport {
         )
     }
 
-    public static func sampleBooks(readingBoardID: BoardID, finishedBoardID: BoardID) -> [Book] {
+    public static func sampleBooks(readingBoardID: BoardID, finishedBoardID: BoardID, pileBoardIDs: [BoardID] = []) -> [Book] {
         let factory = StickerPlacementFactory()
         let now = Date()
         var zIndexes: [Int] = []
@@ -70,10 +72,12 @@ public enum PreviewSupport {
         }
         for i in 0..<4 {
             guard let meta = try? BookMetadata(title: "積読サンプル \(i + 1)", pageCount: 200) else { continue }
+            let pileBoardID: BoardID? = pileBoardIDs.isEmpty ? nil : pileBoardIDs[i % pileBoardIDs.count]
             if let book = try? Book(
                 metadata: meta,
                 status: .unread,
                 purchase: PurchaseInfo(purchasedAt: now.addingTimeInterval(-Double(i) * 86400)),
+                boardID: pileBoardID,
                 addedAt: now.addingTimeInterval(-Double(i) * 86400)
             ) {
                 books.append(book)

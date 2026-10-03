@@ -47,8 +47,8 @@ public struct UpdateBookDetailUseCase: UpdateBookDetailUseCaseProtocol {
         try book.updatePeriod(startedAt: book.period.startedAt, finishedAt: draft.finishedAt)
         book.updatePurchase(PurchaseInfo(purchasedAt: draft.purchasedAt, place: book.purchase.place))
         book.changeStickerEdge(draft.stickerEdge)
-        // 3. ボード割当。unread のときは nil 強制。
-        book.moveToBoard(draft.status == .unread ? nil : draft.boardID)
+        // 3. ボード割当。unread（積読）でもフォルダ所属可。
+        book.moveToBoard(draft.boardID)
         try await books.save(book)
         return book
     }

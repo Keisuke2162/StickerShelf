@@ -14,8 +14,10 @@ public final class AddBookViewModel {
     public var keyword: String = ""
     public var destination: Destination = .pile
     public var purchasedAt: Date = Date()
-    public var selectedBoardID: BoardID?
-    public private(set) var boards: [Board] = []
+    public var selectedShelfBoardID: BoardID?
+    public var selectedPileBoardID: BoardID?
+    public private(set) var shelfBoards: [Board] = []
+    public private(set) var pileBoards: [Board] = []
     public private(set) var results: [SearchCatalogOutput.Item] = []
     public private(set) var isSearching = false
     public private(set) var isAdding = false
@@ -30,17 +32,35 @@ public final class AddBookViewModel {
         self.container = container
     }
 
+    public var boardsForCurrentDestination: [Board] {
+        destination == .shelf ? shelfBoards : pileBoards
+    }
+
+    public var selectedBoardIDForCurrentDestination: BoardID? {
+        get { destination == .shelf ? selectedShelfBoardID : selectedPileBoardID }
+        set {
+            if destination == .shelf { selectedShelfBoardID = newValue }
+            else { selectedPileBoardID = newValue }
+        }
+    }
+
     public func loadBoards() async {
-        boards = (try? await container.fetchBoards.execute()) ?? []
-        if selectedBoardID == nil { selectedBoardID = boards.first?.id }
+        shelfBoards = (try? await container.fetchBoards.execute(kind: .shelf)) ?? []
+        pileBoards = (try? await container.fetchBoards.execute(kind: .pile)) ?? []
+        if selectedShelfBoardID == nil { selectedShelfBoardID = shelfBoards.first?.id }
+        // 積読は「未分類」(nil) をデフォルトとする
     }
 
     public func createBoard(name: String) async {
         do {
-            let board = try await container.createBoard.execute(name: name, now: Date())
-            boards = (try? await container.fetchBoards.execute()) ?? boards
-            selectedBoardID = board.id
-            destination = .shelf
+            let kind: BoardKind = destination == .shelf ? .shelf : .pile
+            let board = try await container.createBoard.execute(name: name, kind: kind, now: Date())
+            await loadBoards()
+            if kind == .shelf {
+                selectedShelfBoardID = board.id
+            } else {
+                selectedPileBoardID = board.id
+            }
         } catch {
             errorMessage = DomainErrorMessage.describe(error)
         }
@@ -92,7 +112,7 @@ public final class AddBookViewModel {
     }
 
     private func effectiveBoardID() -> BoardID? {
-        destination == .shelf ? selectedBoardID : nil
+        destination == .shelf ? selectedShelfBoardID : selectedPileBoardID
     }
 
     public func addSelected() async -> Book? {

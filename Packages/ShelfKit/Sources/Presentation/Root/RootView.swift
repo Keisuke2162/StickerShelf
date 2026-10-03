@@ -69,7 +69,7 @@ public struct RootView: View {
         case .detail:
             router.selectedTab = .shelf
             Task {
-                let boards = (try? await container.fetchBoards.execute()) ?? []
+                let boards = (try? await container.fetchBoards.execute(kind: .shelf)) ?? []
                 for board in boards {
                     if let first = try? await container.fetchShelf.execute(boardID: board.id).books.first {
                         router.detailBookID = first.id

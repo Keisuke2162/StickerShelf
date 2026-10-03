@@ -52,9 +52,7 @@ public struct AddBookView: View {
                         .frame(maxWidth: .infinity).padding()
                     }
                     destinationPicker
-                    if viewModel.destination == .shelf {
-                        boardPicker
-                    }
+                    boardPicker
                     DatePicker("購入日", selection: $viewModel.purchasedAt, displayedComponents: .date)
                 }
                 .padding(20)
@@ -91,8 +89,8 @@ public struct AddBookView: View {
                     }
                 }
             }
-            .alert("新しい本棚を作成", isPresented: $showCreateBoard) {
-                TextField("本棚の名前", text: $newBoardName)
+            .alert(viewModel.destination == .shelf ? "新しい本棚を作成" : "新しい積読フォルダを作成", isPresented: $showCreateBoard) {
+                TextField(viewModel.destination == .shelf ? "本棚の名前" : "フォルダ名", text: $newBoardName)
                 Button("作成") {
                     let name = newBoardName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !name.isEmpty else { return }
@@ -206,19 +204,29 @@ public struct AddBookView: View {
     }
 
     private var boardPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("どの本棚に貼る？").font(FontToken.sectionTitle())
+        let isShelf = viewModel.destination == .shelf
+        let title = isShelf ? "どの本棚に貼る？" : "どのフォルダに入れる？（任意）"
+        let addLabel = isShelf ? "本棚を追加" : "フォルダを追加"
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(FontToken.sectionTitle())
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(viewModel.boards) { board in
-                        Chip(title: board.name, isSelected: viewModel.selectedBoardID == board.id) {
-                            viewModel.selectedBoardID = board.id
+                    if !isShelf {
+                        Chip(title: "未分類", isSelected: viewModel.selectedPileBoardID == nil) {
+                            viewModel.selectedPileBoardID = nil
+                        }
+                    }
+                    ForEach(viewModel.boardsForCurrentDestination) { board in
+                        let selected = (isShelf ? viewModel.selectedShelfBoardID : viewModel.selectedPileBoardID) == board.id
+                        Chip(title: board.name, isSelected: selected) {
+                            if isShelf { viewModel.selectedShelfBoardID = board.id }
+                            else { viewModel.selectedPileBoardID = board.id }
                         }
                     }
                     Button {
                         showCreateBoard = true
                     } label: {
-                        Label("本棚を追加", systemImage: "plus")
+                        Label(addLabel, systemImage: "plus")
                             .font(FontToken.label())
                             .foregroundStyle(ColorToken.ink)
                             .padding(.horizontal, 14).padding(.vertical, 8)

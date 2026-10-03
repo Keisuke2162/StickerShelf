@@ -80,4 +80,20 @@ struct BookRecordMapperTests {
         let book = BookRecordMapper.toDomain(record)
         #expect(book?.sticker == nil)
     }
+
+    /// 積読本もフォルダ所属できる仕様 (2026-10-03) — boardIDValue を unread レコードでも保持する。
+    @Test func unreadBookKeepsBoardID() {
+        let record = baseRecord()
+        record.statusRaw = "unread"
+        record.stickerX = nil
+        record.stickerY = nil
+        record.stickerRotation = nil
+        record.stickerScale = nil
+        record.stickerZIndex = nil
+        let pileFolderID = UUID()
+        record.boardIDValue = pileFolderID
+        let book = BookRecordMapper.toDomain(record)
+        #expect(book?.status == .unread)
+        #expect(book?.boardID?.rawValue == pileFolderID)
+    }
 }

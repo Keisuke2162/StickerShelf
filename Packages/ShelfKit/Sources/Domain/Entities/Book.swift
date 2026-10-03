@@ -12,7 +12,8 @@ public struct Book: Identifiable, Equatable, Sendable {
     public private(set) var sticker: StickerPlacement?
     public private(set) var stickerEdge: StickerEdge
     public private(set) var cover: CoverImage
-    /// 所属する本棚ボード。`status == .unread` では nil（積読は Board に属さない）。
+    /// 所属するフォルダ（Board）。本棚ステータス（.reading/.finished）では本棚側 Board に、
+    /// 積読ステータス（.unread）では積読側 Board に属する。未分類の場合は nil。
     public private(set) var boardID: BoardID?
     public let addedAt: Date
 

@@ -38,9 +38,7 @@ public struct BookDetailSheet: View {
                 heroCover(book: book)
                 titleBlock(book: book)
                 statusSegment(draft: draft)
-                if draft.wrappedValue.status != .unread, !viewModel.boards.isEmpty {
-                    boardPicker(draft: draft)
-                }
+                boardPicker(draft: draft)
                 dateGrid(draft: draft)
                 edgePicker(draft: draft)
                 coverReplace()
@@ -181,13 +179,25 @@ public struct BookDetailSheet: View {
     }
 
     private func boardPicker(draft: Binding<BookDetailDraft>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("本棚").font(FontToken.sectionTitle())
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(viewModel.boards) { board in
-                        Chip(title: board.name, isSelected: draft.wrappedValue.boardID == board.id) {
-                            draft.wrappedValue.boardID = board.id
+        let status = draft.wrappedValue.status
+        let targets = viewModel.boards(for: status)
+        let title = status == .unread ? "積読フォルダ" : "本棚"
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(FontToken.sectionTitle())
+            if targets.isEmpty {
+                Text(status == .unread ? "フォルダ未作成（未分類で保存されます）" : "本棚がありません。先に本棚を作成してください。")
+                    .font(FontToken.caption())
+                    .foregroundStyle(ColorToken.inkSecondary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        Chip(title: "未分類", isSelected: draft.wrappedValue.boardID == nil) {
+                            draft.wrappedValue.boardID = nil
+                        }
+                        ForEach(targets) { board in
+                            Chip(title: board.name, isSelected: draft.wrappedValue.boardID == board.id) {
+                                draft.wrappedValue.boardID = board.id
+                            }
                         }
                     }
                 }

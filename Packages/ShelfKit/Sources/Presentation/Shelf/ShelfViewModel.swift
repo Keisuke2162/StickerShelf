@@ -48,7 +48,7 @@ public final class ShelfViewModel {
 
     private func reloadBoards() async {
         do {
-            boards = try await container.fetchBoards.execute()
+            boards = try await container.fetchBoards.execute(kind: .shelf)
             if selectedBoardID == nil || !boards.contains(where: { $0.id == selectedBoardID }) {
                 selectedBoardID = boards.first?.id
                 await reloadBooks()
@@ -88,7 +88,7 @@ public final class ShelfViewModel {
 
     public func createBoard(name: String) async {
         do {
-            let board = try await container.createBoard.execute(name: name, now: Date())
+            let board = try await container.createBoard.execute(name: name, kind: .shelf, now: Date())
             await reloadBoards()
             select(boardID: board.id)
         } catch {

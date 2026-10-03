@@ -26,18 +26,20 @@ struct UpdateBookDetailUseCaseTests {
         #expect(updated.boardID == boardID)
     }
 
-    @Test func unreadDraftClearsBoard() async throws {
+    @Test func unreadDraftKeepsBoard() async throws {
+        // 積読もフォルダ所属できる仕様 (2026-10-03) に変更。unread 遷移でも draft の boardID を保持する。
         let now = Date()
         let meta = try BookMetadata(title: "本")
         let sticker = StickerPlacement(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1)
-        let board = BoardID()
-        let book = try Book(metadata: meta, status: .reading, period: ReadingPeriod(startedAt: now), sticker: sticker, boardID: board, addedAt: now)
+        let shelfBoard = BoardID()
+        let pileBoard = BoardID()
+        let book = try Book(metadata: meta, status: .reading, period: ReadingPeriod(startedAt: now), sticker: sticker, boardID: shelfBoard, addedAt: now)
         let books = InMemoryBookRepository([book])
         let useCase = UpdateBookDetailUseCase(books: books)
-        let draft = BookDetailDraft(status: .unread, finishedAt: nil, purchasedAt: nil, stickerEdge: .white, boardID: board)
+        let draft = BookDetailDraft(status: .unread, finishedAt: nil, purchasedAt: nil, stickerEdge: .white, boardID: pileBoard)
         let updated = try await useCase.execute(id: book.id, draft: draft, now: now)
         #expect(updated.status == .unread)
-        #expect(updated.boardID == nil)
+        #expect(updated.boardID == pileBoard)
     }
 
     @Test func rejectsInvalidPeriod() async throws {

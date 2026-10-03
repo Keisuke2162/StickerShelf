@@ -95,8 +95,8 @@ public struct AppContainer: Sendable {
     private static func ensureDefaultBoards(repository: SwiftDataBoardRepository, books: SwiftDataBookRepository) async {
         guard let existing = try? await repository.fetchAll(), existing.isEmpty else { return }
         let now = Date()
-        guard let readingBoard = try? Board(name: "読んでる", createdAt: now, sortOrder: 1) else { return }
-        guard let finishedBoard = try? Board(name: "読んだ", createdAt: now, sortOrder: 2) else { return }
+        guard let readingBoard = try? Board(kind: .shelf, name: "読んでる", createdAt: now, sortOrder: 1) else { return }
+        guard let finishedBoard = try? Board(kind: .shelf, name: "読んだ", createdAt: now, sortOrder: 2) else { return }
         try? await repository.save(readingBoard)
         try? await repository.save(finishedBoard)
 

@@ -7,8 +7,16 @@ STATUS: DONE
 - 本棚ボードの書影を CapLog ライクに自由操作：`StickerDraggable` のドラッグ最小距離を 4pt に（タップとの誤爆回避）、操作中に浮き感のあるシャドウと 1.05 倍の拡大で持ち上げ表現
 - `ShelfView` / `PileView` 上部にあったセグメントスイッチを削除、画面タイトルで本棚/積読を区別
 
+### 追加依頼: 積読のフォルダ分け
+- `Board` にジャンル別フォルダ概念として積読側 (`.pile`) を導入。既存の本棚側 (`.shelf`) と ID 空間は共有しつつ `BoardKind` で分離
+- 積読タブに「すべて／<フォルダ名>／＋」のチップ行とフォルダ削除ボタン、「読み始める／読んだことにする／フォルダ移動／未分類に戻す／削除」の長押しメニューを追加
+- 「本を追加」画面で、積読を選んだときにも積読フォルダ（または「未分類」）を選択可能に
+- 詳細モーダルの Board ピッカーが本の現ステータスに応じて自動で `.shelf` / `.pile` を切替え（積読本でも「未分類＋フォルダ」から選べる）
+- `BookRecord.kindRaw` のデフォルトを `"shelf"` にしてマイグレ互換（既存ストアは全て本棚扱い）
+
 ### 検証
 - `scripts/verify.sh`: App 3 tests + ShelfKit パッケージ、ビルド・テスト成功・警告ゼロ
+- 新規テスト: `SwiftDataBoardRepositoryTests`（kind ラウンドトリップ・絞り込み・レガシーレコード）、`FetchPileUseCaseTests.filtersByBoardID_whenSpecified`、`BookRecordMapperTests.unreadBookKeepsBoardID`
 
 ## 最終報告（2026-10-03）
 

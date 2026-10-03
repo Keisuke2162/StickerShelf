@@ -27,17 +27,25 @@ public final class BookDetailViewModel {
         do {
             book = try await container.fetchBookDetail.execute(id: bookID)
             if let book {
+                // 初期 boardID はブック本体の値を優先。無ければ status に対応する kind の先頭 Board。
+                let fallbackKind: BoardKind = book.status == .unread ? .pile : .shelf
+                let fallback = boards.first { $0.kind == fallbackKind }?.id
                 draft = BookDetailDraft(
                     status: book.status,
                     finishedAt: book.period.finishedAt,
                     purchasedAt: book.purchase.purchasedAt,
                     stickerEdge: book.stickerEdge,
-                    boardID: book.boardID ?? boards.first?.id
+                    boardID: book.boardID ?? fallback
                 )
             }
         } catch {
             errorMessage = DomainErrorMessage.describe(error)
         }
+    }
+
+    public func boards(for status: ReadingStatus) -> [Board] {
+        let kind: BoardKind = status == .unread ? .pile : .shelf
+        return boards.filter { $0.kind == kind }
     }
 
     public func save() async -> Bool {
