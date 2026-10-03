@@ -134,7 +134,7 @@ public final class AddBookViewModel {
         }
     }
 
-    public func addManual(entry: AddBookInput.ManualEntry) async -> Book? {
+    public func addManual(entry: AddBookInput.ManualEntry, coverImageData: Data? = nil) async -> Book? {
         if destination == .shelf, effectiveBoardID() == nil {
             errorMessage = "本棚を選ぶか、先に本棚を作成してください。"
             return nil
@@ -142,7 +142,22 @@ public final class AddBookViewModel {
         isAdding = true
         defer { isAdding = false }
         do {
-            let input = AddBookInput(source: .manual(entry), initialStatus: initialStatus(), boardID: effectiveBoardID(), purchasedAt: purchasedAt, now: Date())
+            // カメラ撮影済みの画像がある場合はローカル保存して CoverImage.local を entry に差し込む。
+            let finalEntry: AddBookInput.ManualEntry
+            if let coverImageData {
+                let cover = try await container.coverImages.saveUserImage(coverImageData)
+                finalEntry = AddBookInput.ManualEntry(
+                    title: entry.title,
+                    authors: entry.authors,
+                    publisher: entry.publisher,
+                    pageCount: entry.pageCount,
+                    isbn: entry.isbn,
+                    cover: cover
+                )
+            } else {
+                finalEntry = entry
+            }
+            let input = AddBookInput(source: .manual(finalEntry), initialStatus: initialStatus(), boardID: effectiveBoardID(), purchasedAt: purchasedAt, now: Date())
             let book = try await container.addBook.execute(input)
             addedBook = book
             return book

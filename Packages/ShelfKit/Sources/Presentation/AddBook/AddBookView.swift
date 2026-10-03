@@ -79,9 +79,9 @@ public struct AddBookView: View {
                 }
             }
             .sheet(isPresented: $showManualEntry) {
-                ManualEntryView { entry in
+                ManualEntryView { entry, coverData in
                     Task {
-                        if await viewModel.addManual(entry: entry) != nil {
+                        if await viewModel.addManual(entry: entry, coverImageData: coverData) != nil {
                             router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
                             showManualEntry = false
                             dismiss()
@@ -126,6 +126,15 @@ public struct AddBookView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("バーコード読み取り")
+
+            Button { showManualEntry = true } label: {
+                Image(systemName: "square.and.pencil")
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.accent))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("手動で登録")
         }
     }
 

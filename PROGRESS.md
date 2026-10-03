@@ -28,6 +28,17 @@ STATUS: DONE
 ### 検証
 - `scripts/verify.sh` 緑（カメラ機能は実機でのみ動作、ビルド整合性のみ確認）
 
+## 追加依頼: 手動登録を常設化＆書影撮影対応（2026-10-04）
+
+### 内容
+- AddBookView の searchBar 右端に「手動で登録」ボタンを常設（アクセント色の鉛筆アイコン）
+- `ManualEntryView` に書影カメラ撮影のセクション追加（`DocumentScannerView` を再利用、プレビュー・撮り直し・書影を外す操作）
+- タイトル含む全フィールドを任意化。タイトル空は `(無題)` に自動フォールバックで登録可能
+- `AddBookViewModel.addManual(entry:coverImageData:)` が画像データを受け取り、`CoverImageRepository.saveUserImage` 経由で `CoverImage.local` に変換してから UseCase に渡す
+
+### 検証
+- `scripts/verify.sh` 緑（カメラ機能は実機でのみ動作）
+
 ## 最終報告（2026-10-03）
 
 ### 成果物
