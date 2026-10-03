@@ -189,9 +189,16 @@ public struct PileView: View {
         var out: [PileDynamicsView.Item] = []
         out.reserveCapacity(viewModel.books.count)
         for book in viewModel.books {
-            let firstByte = book.id.rawValue.uuid.0
-            let isVertical = (firstByte % 10) < 6
             let data = (try? await container.coverImages.imageData(for: book.cover)) ?? nil
+            // 画像があればその実比でセルの向きを決める（撮影した縦長の本は縦長セルに入れる）。
+            // 画像が無い場合のみ BookID から決定論的に振り分けて、落ちもののバリエーションを出す。
+            let isVertical: Bool
+            if let data, let image = UIImage(data: data) {
+                isVertical = image.size.height >= image.size.width
+            } else {
+                let firstByte = book.id.rawValue.uuid.0
+                isVertical = (firstByte % 10) < 6
+            }
             out.append(.init(id: book.id, title: book.metadata.title, isVertical: isVertical, imageData: data))
         }
         pileItems = out
