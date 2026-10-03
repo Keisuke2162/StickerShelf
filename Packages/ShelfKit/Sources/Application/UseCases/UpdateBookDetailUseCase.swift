@@ -24,10 +24,16 @@ public protocol UpdateBookDetailUseCaseProtocol: Sendable {
 public struct UpdateBookDetailUseCase: UpdateBookDetailUseCaseProtocol {
     private let books: BookRepository
     private let placementFactory: StickerPlacementFactory
+    private let shelfResolver: ShelfBoardResolver?
 
-    public init(books: BookRepository, placementFactory: StickerPlacementFactory = .init()) {
+    public init(
+        books: BookRepository,
+        placementFactory: StickerPlacementFactory = .init(),
+        shelfResolver: ShelfBoardResolver? = nil
+    ) {
         self.books = books
         self.placementFactory = placementFactory
+        self.shelfResolver = shelfResolver
     }
 
     public func execute(id: BookID, draft: BookDetailDraft, now: Date) async throws -> Book {
@@ -47,8 +53,13 @@ public struct UpdateBookDetailUseCase: UpdateBookDetailUseCaseProtocol {
         try book.updatePeriod(startedAt: book.period.startedAt, finishedAt: draft.finishedAt)
         book.updatePurchase(PurchaseInfo(purchasedAt: draft.purchasedAt, place: book.purchase.place))
         book.changeStickerEdge(draft.stickerEdge)
-        // 3. ボード割当。unread（積読）でもフォルダ所属可。
-        book.moveToBoard(draft.boardID)
+        // 3. ボード割当。本棚ステータスへの遷移時は shelf 側に整合させる。unread は draft をそのまま尊重。
+        if let shelfResolver, draft.status != .unread {
+            let resolved = await shelfResolver.resolve(status: draft.status, desiredBoardID: draft.boardID)
+            book.moveToBoard(resolved)
+        } else {
+            book.moveToBoard(draft.boardID)
+        }
         try await books.save(book)
         return book
     }

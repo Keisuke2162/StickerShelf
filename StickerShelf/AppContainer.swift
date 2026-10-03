@@ -54,6 +54,7 @@ public struct AppContainer: Sendable {
             covers = NullCoverImageRepository()
         }
 
+        let shelfResolver = ShelfBoardResolver(boards: boardRepository)
         let presentation = PresentationContainer(
             searchCatalog: SearchCatalogUseCase(catalog: catalog, books: bookRepository),
             findCatalogByISBN: FindCatalogBookByISBNUseCase(catalog: catalog),
@@ -62,8 +63,8 @@ public struct AppContainer: Sendable {
             fetchPile: FetchPileUseCase(books: bookRepository),
             fetchCalendar: FetchReadingCalendarUseCase(books: bookRepository),
             fetchBookDetail: FetchBookDetailUseCase(books: bookRepository),
-            updateBookDetail: UpdateBookDetailUseCase(books: bookRepository),
-            changeStatus: ChangeReadingStatusUseCase(books: bookRepository),
+            updateBookDetail: UpdateBookDetailUseCase(books: bookRepository, shelfResolver: shelfResolver),
+            changeStatus: ChangeReadingStatusUseCase(books: bookRepository, shelfResolver: shelfResolver),
             moveSticker: MoveStickerUseCase(books: bookRepository),
             bringToFront: BringStickerToFrontUseCase(books: bookRepository),
             replaceCover: ReplaceCoverImageUseCase(books: bookRepository, covers: covers),
@@ -91,16 +92,36 @@ public struct AppContainer: Sendable {
         return app
     }
 
-    /// 初回起動時に既定ボードを seed。既存の reading/finished 本に boardID を割り当て直す移行も行う。
+    /// 既定の本棚 Board「読んでる」「読んだ」が存在することを保証する（冪等）。
+    /// 片方だけ消されたケースでも、不足分だけ補充する。
+    /// 併せて、`boardID` 未設定の `.reading` / `.finished` 本を既定ボードに割り当て直す。
     private static func ensureDefaultBoards(repository: SwiftDataBoardRepository, books: SwiftDataBookRepository) async {
-        guard let existing = try? await repository.fetchAll(), existing.isEmpty else { return }
+        let existing = (try? await repository.fetchAll()) ?? []
         let now = Date()
-        guard let readingBoard = try? Board(kind: .shelf, name: "読んでる", createdAt: now, sortOrder: 1) else { return }
-        guard let finishedBoard = try? Board(kind: .shelf, name: "読んだ", createdAt: now, sortOrder: 2) else { return }
-        try? await repository.save(readingBoard)
-        try? await repository.save(finishedBoard)
+        let shelfBoards = existing.filter { $0.kind == .shelf }
+        let maxOrder = existing.map(\.sortOrder).max() ?? 0
 
-        // 既存書籍の移行: boardID 未設定の .reading / .finished を既定ボードに割り当て
+        var readingBoard = shelfBoards.first { $0.name == "読んでる" }
+        if readingBoard == nil {
+            let created = try? Board(kind: .shelf, name: "読んでる", createdAt: now, sortOrder: maxOrder + 1)
+            if let created {
+                try? await repository.save(created)
+                readingBoard = created
+            }
+        }
+
+        var finishedBoard = shelfBoards.first { $0.name == "読んだ" }
+        if finishedBoard == nil {
+            let nextOrder = (readingBoard?.sortOrder ?? maxOrder) + 1
+            let created = try? Board(kind: .shelf, name: "読んだ", createdAt: now, sortOrder: nextOrder)
+            if let created {
+                try? await repository.save(created)
+                finishedBoard = created
+            }
+        }
+
+        guard let readingBoard, let finishedBoard else { return }
+
         if let all = try? await books.fetchAll() {
             var migrated: [Book] = []
             for var book in all {

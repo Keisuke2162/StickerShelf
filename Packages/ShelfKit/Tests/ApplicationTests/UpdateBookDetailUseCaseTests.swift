@@ -42,6 +42,26 @@ struct UpdateBookDetailUseCaseTests {
         #expect(updated.boardID == pileBoard)
     }
 
+    @Test func pileFolder_toReading_isRemappedToShelfBoard() async throws {
+        // 詳細モーダルで積読本（pile Folder 所属）を「読んでる」に切り替え → draft.boardID が未分類でも shelf 側に自動割当。
+        let now = Date()
+        let pileFolderID = BoardID()
+        let readingShelf = try Board(kind: .shelf, name: "読んでる", createdAt: now, sortOrder: 1)
+        let finishedShelf = try Board(kind: .shelf, name: "読んだ", createdAt: now, sortOrder: 2)
+        let pileFolder = try Board(id: pileFolderID, kind: .pile, name: "あとで読む", createdAt: now, sortOrder: 3)
+        let boards = InMemoryBoardRepository([readingShelf, finishedShelf, pileFolder])
+
+        let book = try Book(metadata: try BookMetadata(title: "本"), status: .unread, boardID: pileFolderID, addedAt: now)
+        let bookRepo = InMemoryBookRepository([book])
+        let useCase = UpdateBookDetailUseCase(books: bookRepo, shelfResolver: ShelfBoardResolver(boards: boards))
+
+        // draft の boardID が積読フォルダのままでも、新 status(.reading) の kind に応じて shelf 側へ補正される。
+        let draft = BookDetailDraft(status: .reading, finishedAt: nil, purchasedAt: nil, stickerEdge: .white, boardID: pileFolderID)
+        let updated = try await useCase.execute(id: book.id, draft: draft, now: now)
+        #expect(updated.status == .reading)
+        #expect(updated.boardID == readingShelf.id)
+    }
+
     @Test func rejectsInvalidPeriod() async throws {
         let now = Date()
         let laterDay = now.addingTimeInterval(60 * 60 * 24 * 2)

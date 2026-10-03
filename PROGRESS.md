@@ -39,6 +39,18 @@ STATUS: DONE
 ### 検証
 - `scripts/verify.sh` 緑（カメラ機能は実機でのみ動作）
 
+## 追加依頼: 本棚への移動時 boardID 整合バグ修正＆既定 Board 冪等化（2026-10-04）
+
+### 内容
+- `ShelfBoardResolver` を新設し、`ChangeReadingStatusUseCase`／`UpdateBookDetailUseCase` に注入。積読本を reading/finished に遷移させたとき `boardID` が積読フォルダのまま残っていた不具合を解消
+  - `.reading` → 「読んでる」Board、`.finished` → 「読んだ」Board に自動割当
+  - 既に shelf 側に所属している場合はその Board を尊重
+- `AppContainer.ensureDefaultBoards` を「空ストア時のみ」から「不足分補充」に書き換え（冪等）
+- `InMemoryBoardRepository` を追加し、UseCase の整合挙動を Testing で検証
+
+### 検証
+- `scripts/verify.sh` 緑
+
 ## 最終報告（2026-10-03）
 
 ### 成果物
