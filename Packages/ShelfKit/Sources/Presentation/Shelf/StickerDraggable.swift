@@ -16,9 +16,8 @@ struct StickerDraggable: View {
     @State private var popScale: CGFloat = 1
     @State private var hasBroughtToFront = false
     /// ジェスチャ終了直後に表示する暫定 placement。
-    /// `@GestureState` は gesture 終了で即 0 に戻るが、永続化と ViewModel の再描画は非同期で、
-    /// その間「古い placement + dragOffset=0」で一瞬「元の位置」に戻って見える。
-    /// localPlacement を set しておけば、prop (`placement`) が追いつくまで新位置を UI に保持できる。
+    /// `@GestureState` は gesture 終了で即 0 に戻るため、永続化と ViewModel の再 fetch が
+    /// 返ってくるまでの一瞬「古い placement + offset=0」で描画されるのを埋める。
     @State private var localPlacement: StickerPlacement?
 
     private let baseSize = CGSize(width: 62, height: 90)
@@ -26,7 +25,7 @@ struct StickerDraggable: View {
     /// prop の placement と暫定値のどちらかを優先する実効値。
     private var effectivePlacement: StickerPlacement { localPlacement ?? placement }
 
-    /// 現在ジェスチャ中の派生値を含めた最新の placement。
+    /// 現在ジェスチャ中（@GestureState が有効な間）の表示用派生値。
     private var liveX: Double {
         guard boardSize.width > 0 else { return effectivePlacement.x }
         let base = effectivePlacement.x * boardSize.width
@@ -67,23 +66,27 @@ struct StickerDraggable: View {
             Button("積読に戻す") { Task { await viewModel.returnToPile(id: book.id) } }
             Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
         }
-        // ドラッグは「指が 4pt 以上動いたら」発火。これより小さい動きは onTapGesture が拾う。
+        // SwiftUI の @GestureState は .onEnded 実行時に既に初期値へリセットされるため、
+        // .onEnded の `value` から最終値を受け取って persistEnd に渡す必要がある。
         .gesture(
             DragGesture(minimumDistance: 4)
                 .updating($dragOffset) { value, state, _ in
                     state = value.translation
                 }
                 .onChanged { _ in bringToFrontOnce() }
-                .onEnded { _ in persistCurrent() }
+                .onEnded { value in
+                    persistEnd(translation: value.translation, magnification: 1, rotation: .zero)
+                }
         )
-        // ピンチ・回転は 2 本指なのでドラッグと競合しない。.simultaneousGesture で同時成立。
         .simultaneousGesture(
             MagnifyGesture()
                 .updating($magnify) { value, state, _ in
                     state = value.magnification
                 }
                 .onChanged { _ in bringToFrontOnce() }
-                .onEnded { _ in persistCurrent() }
+                .onEnded { value in
+                    persistEnd(translation: .zero, magnification: value.magnification, rotation: .zero)
+                }
         )
         .simultaneousGesture(
             RotateGesture()
@@ -91,10 +94,11 @@ struct StickerDraggable: View {
                     state = value.rotation
                 }
                 .onChanged { _ in bringToFrontOnce() }
-                .onEnded { _ in persistCurrent() }
+                .onEnded { value in
+                    persistEnd(translation: .zero, magnification: 1, rotation: value.rotation)
+                }
         )
         .onChange(of: placement) { _, newValue in
-            // 永続化が往復して prop が追いついたら暫定値をクリアして prop に戻す。
             if let local = localPlacement, local == newValue {
                 localPlacement = nil
             }
@@ -117,14 +121,25 @@ struct StickerDraggable: View {
         Task { await viewModel.didTouchSticker(id: book.id) }
     }
 
-    private func persistCurrent() {
-        let next = StickerPlacement(
-            x: liveX, y: liveY,
-            rotationDegrees: liveRotation,
-            scale: liveScale,
-            zIndex: effectivePlacement.zIndex
-        )
-        // UI には即反映。prop が追いつくまで localPlacement が表示を担う。
+    /// ジェスチャ終了時の最終値から次の placement を決めて永続化を要求する。
+    /// `@GestureState` に頼らず、呼び出し側（onEnded クロージャ）から value を直接受け取る。
+    private func persistEnd(translation: CGSize, magnification: CGFloat, rotation: Angle) {
+        let base = effectivePlacement
+        let nextX: Double
+        let nextY: Double
+        if boardSize.width > 0, boardSize.height > 0 {
+            let xBase = base.x * boardSize.width
+            let yBase = base.y * boardSize.height
+            nextX = ((xBase + translation.width) / boardSize.width).clamped(to: StickerPlacement.xRange)
+            nextY = ((yBase + translation.height) / boardSize.height).clamped(to: StickerPlacement.yRange)
+        } else {
+            nextX = base.x
+            nextY = base.y
+        }
+        let nextScale = (base.scale * magnification).clamped(to: StickerPlacement.scaleRange)
+        let nextRotation = (base.rotationDegrees + rotation.degrees).clamped(to: StickerPlacement.rotationRange)
+        let next = StickerPlacement(x: nextX, y: nextY, rotationDegrees: nextRotation, scale: nextScale, zIndex: base.zIndex)
+        // UI に即反映。prop が追いつくまで localPlacement が表示を担う。
         localPlacement = next
         hasBroughtToFront = false
         Task { await viewModel.didEndGesture(id: book.id, placement: next) }
