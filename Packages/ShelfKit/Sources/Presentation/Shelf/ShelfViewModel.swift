@@ -7,6 +7,8 @@ import Application
 @MainActor
 @Observable
 public final class ShelfViewModel {
+    public enum Display: Hashable { case board, list }
+
     public private(set) var boards: [Board] = []
     public private(set) var selectedBoardID: BoardID?
     public private(set) var books: [Book] = []
@@ -16,6 +18,8 @@ public final class ShelfViewModel {
     public var popAnimationIDs: Set<BookID> = []
     /// 変形ハンドル付きで編集中のステッカー（1 件まで）。空白タップで nil に戻る。
     public var selectedStickerID: BookID?
+    /// ボード表示 / リスト表示の切替。
+    public var display: Display = .board
 
     private let container: PresentationContainer
 

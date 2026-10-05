@@ -20,7 +20,11 @@ public struct ShelfView: View {
         VStack(spacing: 12) {
             header
             boardChips
-            board
+            if viewModel.display == .board {
+                board
+            } else {
+                listView
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -72,15 +76,15 @@ public struct ShelfView: View {
                 .accessibilityLabel("現在の本棚を削除")
             }
             Button {
-                Task { await viewModel.reload() }
+                viewModel.display = viewModel.display == .board ? .list : .board
             } label: {
-                Image(systemName: "arrow.clockwise")
+                Image(systemName: viewModel.display == .board ? "list.bullet" : "square.on.square")
                     .frame(width: 44, height: 44)
                     .background(Circle().fill(ColorToken.surface))
                     .foregroundStyle(ColorToken.ink)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("再読み込み")
+            .accessibilityLabel("表示切替")
         }
     }
 
@@ -161,6 +165,57 @@ public struct ShelfView: View {
             }
             .coordinateSpace(name: "stickerBoard")
             .clipped()
+        }
+    }
+
+    private var listView: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                if viewModel.books.isEmpty && !viewModel.isLoading {
+                    Text("この本棚はまだ空です")
+                        .font(FontToken.bodyRegular())
+                        .foregroundStyle(ColorToken.inkSecondary)
+                        .padding(.top, 32)
+                }
+                ForEach(viewModel.books) { book in
+                    Button {
+                        router.detailBookID = book.id
+                    } label: {
+                        HStack(spacing: 12) {
+                            CoverImageView(
+                                cover: book.cover,
+                                title: book.metadata.title,
+                                loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
+                            )
+                            .frame(width: 40, height: 58)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(book.metadata.title)
+                                    .font(FontToken.sectionTitle())
+                                    .foregroundStyle(ColorToken.ink)
+                                    .lineLimit(2)
+                                if !book.metadata.authors.isEmpty {
+                                    Text(book.metadata.authors.joined(separator: ", "))
+                                        .font(FontToken.caption())
+                                        .foregroundStyle(ColorToken.inkSecondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.surface))
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button("最前面へ") { Task { await viewModel.didTouchSticker(id: book.id) } }
+                        Button("積読に戻す") { Task { await viewModel.returnToPile(id: book.id) } }
+                        Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
+                    }
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 }

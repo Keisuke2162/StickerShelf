@@ -168,7 +168,7 @@ public struct CalendarView: View {
             return f
         }()
         return VStack(alignment: .leading, spacing: 8) {
-            Text("\(formatter.string(from: day))に読み終えた本")
+            Text(verbatim: "\(formatter.string(from: day))に読んだ本")
                 .font(FontToken.sectionTitle()).foregroundStyle(ColorToken.ink)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
