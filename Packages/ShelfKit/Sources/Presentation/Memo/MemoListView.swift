@@ -86,7 +86,7 @@ public struct MemoListView: View {
                 LazyVStack(spacing: 8) {
                     ForEach(viewModel.memos) { memo in
                         NavigationLink {
-                            AddBookView(container: container, router: router, initialKeyword: memo.title)
+                            MemoSearchResultView(container: container, router: router, keyword: memo.title)
                         } label: {
                             memoRow(memo)
                         }
