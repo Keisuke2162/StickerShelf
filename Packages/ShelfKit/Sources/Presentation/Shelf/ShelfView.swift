@@ -144,7 +144,7 @@ public struct ShelfView: View {
                     }
                 } else if viewModel.books.isEmpty && !viewModel.isLoading {
                     EmptyShelfPlaceholder {
-                        router.isAddingBook = true
+                        router.selectedTab = .book
                     }
                 }
 

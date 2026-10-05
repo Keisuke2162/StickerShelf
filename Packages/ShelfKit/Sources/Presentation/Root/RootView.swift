@@ -31,9 +31,6 @@ public struct RootView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
-        .fullScreenCover(isPresented: $router.isAddingBook) {
-            AddBookView(container: container, router: router)
-        }
         .task {
             applyStartScreen()
         }
@@ -46,6 +43,8 @@ public struct RootView: View {
             ShelfView(container: container, router: router)
         case .pile:
             PileView(container: container, router: router)
+        case .book:
+            AddBookView(container: container, router: router)
         case .calendar:
             CalendarView(container: container, router: router)
         case .settings:
@@ -65,7 +64,7 @@ public struct RootView: View {
         case .settings:
             router.selectedTab = .settings
         case .add:
-            router.isAddingBook = true
+            router.selectedTab = .book
         case .detail:
             router.selectedTab = .shelf
             Task {

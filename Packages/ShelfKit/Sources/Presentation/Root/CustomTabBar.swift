@@ -8,7 +8,7 @@ struct CustomTabBar: View {
         HStack(spacing: 0) {
             tabButton(title: "本棚", icon: "square.on.square", tab: .shelf)
             tabButton(title: "積読", icon: "square.stack.3d.down.right", tab: .pile)
-            bookActionButton
+            tabButton(title: "本", icon: "book.closed", tab: .book)
             tabButton(title: "カレンダー", icon: "calendar", tab: .calendar)
             tabButton(title: "マイページ", icon: "person.circle", tab: .settings)
         }
@@ -40,25 +40,6 @@ struct CustomTabBar: View {
             .frame(minHeight: 44)
         }
         .buttonStyle(.plain)
-    }
-
-    /// 「本」タブ。選択状態は持たず、タップで本を追加画面を開く。
-    private var bookActionButton: some View {
-        Button {
-            router.isAddingBook = true
-        } label: {
-            VStack(spacing: 4) {
-                Image(systemName: "book.closed.fill")
-                    .font(.system(size: 20, weight: .bold))
-                Text("本")
-                    .font(FontToken.tabLabel(selected: false))
-            }
-            .foregroundStyle(ColorToken.accent)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 44)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("本を追加")
     }
 }
 

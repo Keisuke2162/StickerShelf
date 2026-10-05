@@ -11,7 +11,6 @@ public struct AddBookView: View {
     @State private var showManualEntry = false
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
-    @Environment(\.dismiss) private var dismiss
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -69,11 +68,6 @@ public struct AddBookView: View {
             .navigationTitle("本を追加")
             .navigationBarTitleDisplayMode(.inline)
             .task { await viewModel.loadBoards() }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { dismiss() }
-                }
-            }
             .sheet(isPresented: $showScanner) {
                 BarcodeScannerView { isbn in
                     showScanner = false
@@ -84,9 +78,9 @@ public struct AddBookView: View {
                 ManualEntryView { entry, coverData in
                     Task {
                         if await viewModel.addManual(entry: entry, coverImageData: coverData) != nil {
+                            // 追加完了したら対応するタブに遷移。タブ画面なので dismiss は不要。
                             router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
                             showManualEntry = false
-                            dismiss()
                         }
                     }
                 }
@@ -250,8 +244,8 @@ public struct AddBookView: View {
         return Button {
             Task {
                 if await viewModel.addSelected() != nil {
+                    // タブ画面なので dismiss せず対応タブへ遷移。
                     router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
-                    dismiss()
                 }
             }
         } label: {
