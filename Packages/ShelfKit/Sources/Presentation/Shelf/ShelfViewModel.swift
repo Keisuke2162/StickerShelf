@@ -14,6 +14,8 @@ public final class ShelfViewModel {
     public private(set) var isLoading = false
     public var errorMessage: String?
     public var popAnimationIDs: Set<BookID> = []
+    /// 変形ハンドル付きで編集中のステッカー（1 件まで）。空白タップで nil に戻る。
+    public var selectedStickerID: BookID?
 
     private let container: PresentationContainer
 

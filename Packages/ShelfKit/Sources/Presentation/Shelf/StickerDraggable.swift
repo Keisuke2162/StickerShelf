@@ -10,11 +10,13 @@ struct StickerDraggable: View {
     let router: Router
     let container: PresentationContainer
 
-    @State private var isSelected: Bool = false
     @State private var localPlacement: StickerPlacement?
     @State private var popScale: CGFloat = 1
     @State private var hasBroughtToFront = false
     @State private var showActionMenu = false
+
+    /// 選択中かは ViewModel 経由（1 件のみ・空白タップで解除）。
+    private var isSelected: Bool { viewModel.selectedStickerID == book.id }
 
     @GestureState private var dragTranslation: CGSize = .zero
     @GestureState private var resizeMultiplier: Double = 1
@@ -61,8 +63,7 @@ struct StickerDraggable: View {
         .position(x: center.x + dragTranslation.width, y: center.y + dragTranslation.height)
         .onTapGesture {
             if isSelected {
-                // 選択中タップで解除。詳細を開きたい場合は先に解除してからタップし直す。
-                isSelected = false
+                viewModel.selectedStickerID = nil
             } else {
                 router.detailBookID = book.id
             }
@@ -191,7 +192,7 @@ struct StickerDraggable: View {
                 if case .second(true, _) = value {
                     bringToFrontOnce()
                     if !isSelected {
-                        isSelected = true
+                        viewModel.selectedStickerID = book.id
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
                 }
@@ -239,37 +240,39 @@ struct StickerDraggable: View {
     }
 
     /// 回転ハンドルのドラッグ → 中心軸での回転角を計算。
+    /// 書影ローカル座標（.rotationEffect 下）だとドラッグ中に書影自身が回転するたびに
+    /// translation の座標系が変わり挙動が暴れるため、ボード座標系に固定して
+    /// startLocation と現在 location から中心基準の角度差分を直接計算する。
     private func rotateGesture(frameHeight: CGFloat, handleGap: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 0)
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("stickerBoard"))
             .updating($rotateDelta) { value, state, _ in
-                state = Self.rotateDelta(from: value.translation,
-                                         frameHeight: frameHeight,
-                                         handleGap: handleGap,
-                                         rotationDegrees: effectivePlacement.rotationDegrees)
+                state = Self.rotateDelta(startLocation: value.startLocation,
+                                         location: value.location,
+                                         centerOnBoard: centerOnBoard())
             }
             .onChanged { _ in bringToFrontOnce() }
             .onEnded { value in
-                let d = Self.rotateDelta(from: value.translation,
-                                         frameHeight: frameHeight,
-                                         handleGap: handleGap,
-                                         rotationDegrees: effectivePlacement.rotationDegrees)
+                let d = Self.rotateDelta(startLocation: value.startLocation,
+                                         location: value.location,
+                                         centerOnBoard: centerOnBoard())
                 persistEnd(translation: .zero, scaleMultiplier: 1, rotation: d)
             }
     }
 
-    private static func rotateDelta(from translation: CGSize,
-                                    frameHeight: CGFloat,
-                                    handleGap: CGFloat,
-                                    rotationDegrees: Double) -> Angle {
-        // .rotationEffect 下では translation はローカル座標なので、ハンドルの初期位置は常に (0, -dist)。
-        // 書影の現在角度 rotationDegrees は view transform として外側に残っているため、ここでは触らない。
-        let dist = Double(frameHeight / 2 + handleGap)
-        let hxN = Double(translation.width)
-        let hyN = -dist + Double(translation.height)
-        // 中心→新位置の方向角。真上 (0, -dist) が 0 度、時計回りに +。
-        let newAngleRad = atan2(hxN, -hyN)
-        let newDegrees = newAngleRad * 180 / .pi
-        return .degrees(newDegrees)
+    /// 書影中心のボード座標。
+    private func centerOnBoard() -> CGPoint {
+        CGPoint(x: effectivePlacement.x * boardSize.width,
+                y: effectivePlacement.y * boardSize.height)
+    }
+
+    private static func rotateDelta(startLocation: CGPoint, location: CGPoint, centerOnBoard: CGPoint) -> Angle {
+        // ボード座標系の中心→開始位置の角度と、中心→現在位置の角度の差分がそのまま回転量。
+        let a0 = atan2(Double(startLocation.x - centerOnBoard.x), -Double(startLocation.y - centerOnBoard.y))
+        let a1 = atan2(Double(location.x - centerOnBoard.x), -Double(location.y - centerOnBoard.y))
+        var deltaDeg = (a1 - a0) * 180 / .pi
+        while deltaDeg > 180 { deltaDeg -= 360 }
+        while deltaDeg < -180 { deltaDeg += 360 }
+        return .degrees(deltaDeg)
     }
 
     // MARK: - Side effects

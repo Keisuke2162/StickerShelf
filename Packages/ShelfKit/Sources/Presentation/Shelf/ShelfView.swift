@@ -117,6 +117,13 @@ public struct ShelfView: View {
                 DotGridBackground()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+                // 空白タップで選択解除するためのタップレイヤー（ステッカーの下）。
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        viewModel.selectedStickerID = nil
+                    }
+
                 if viewModel.boards.isEmpty && !viewModel.isLoading {
                     VStack(spacing: 12) {
                         Text("本棚がありません").font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
@@ -152,6 +159,7 @@ public struct ShelfView: View {
                     }
                 }
             }
+            .coordinateSpace(name: "stickerBoard")
             .clipped()
         }
     }
