@@ -92,6 +92,14 @@ struct StickerDraggable: View {
             Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
             Button("キャンセル", role: .cancel) {}
         }
+        .onChange(of: isPressing) { _, newValue in
+            // 長押し成立の瞬間（isPressing が false→true）に選択モードへ入る。
+            // ドラッグ移動しないと .onChanged が発火しないパスがあるため、@GestureState の変化で捕捉する。
+            if newValue, !isSelected {
+                viewModel.selectedStickerID = book.id
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            }
+        }
         .onChange(of: placement) { _, newValue in
             if let local = localPlacement, local == newValue {
                 localPlacement = nil
@@ -177,10 +185,6 @@ struct StickerDraggable: View {
             .onChanged { value in
                 if case .second(true, _) = value {
                     bringToFrontOnce()
-                    if !isSelected {
-                        viewModel.selectedStickerID = book.id
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    }
                 }
             }
             .onEnded { value in
