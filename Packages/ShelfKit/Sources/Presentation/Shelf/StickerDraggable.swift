@@ -22,7 +22,7 @@ struct StickerDraggable: View {
     @State private var localPlacement: StickerPlacement?
 
     private let baseSize = CGSize(width: 62, height: 90)
-    private let longPressDuration: Double = 0.3
+    private let longPressDuration: Double = 0.15
 
     private var effectivePlacement: StickerPlacement { localPlacement ?? placement }
 
