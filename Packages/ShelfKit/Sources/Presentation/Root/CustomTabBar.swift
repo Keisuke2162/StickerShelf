@@ -6,15 +6,6 @@ struct CustomTabBar: View {
 
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(ColorToken.surface)
-                .frame(height: 84)
-                .overlay(
-                    Rectangle().fill(ColorToken.hairline).frame(height: 1),
-                    alignment: .top
-                )
-                .shadow(color: ColorToken.ink.opacity(0.04), radius: 8, y: -2)
-
             // 5 列均等グリッド: 本棚 / 積読 / (中央 ＋ スロット) / カレンダー / 設定
             HStack(spacing: 0) {
                 tabButton(title: "本棚", icon: "square.on.square", tab: .shelf).frame(maxWidth: .infinity)
@@ -42,8 +33,14 @@ struct CustomTabBar: View {
             .offset(y: -26)
         }
         .frame(height: 84)
-        // Safe Area 下部までタブバーと同じ色で埋めて継ぎ目をなくす。
-        .background(ColorToken.surface.ignoresSafeArea(edges: .bottom))
+        // 背景を 1 枚にまとめて Safe Area 下部まで拡張。
+        // 上端のヘアラインとシャドウは拡張範囲内で、下側は surface 一色のまま。
+        .background {
+            ColorToken.surface
+                .overlay(Rectangle().fill(ColorToken.hairline).frame(height: 1), alignment: .top)
+                .shadow(color: ColorToken.ink.opacity(0.04), radius: 8, y: -2)
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private func tabButton(title: String, icon: String, tab: Router.Tab) -> some View {
