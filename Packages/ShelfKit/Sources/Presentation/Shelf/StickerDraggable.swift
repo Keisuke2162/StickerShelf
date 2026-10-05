@@ -10,42 +10,27 @@ struct StickerDraggable: View {
     let router: Router
     let container: PresentationContainer
 
-    @GestureState private var dragOffset: CGSize = .zero
+    /// 長押し成功後の DragGesture.translation。長押し前・ドラッグなしのときは .zero。
+    @GestureState private var dragTranslation: CGSize = .zero
     @GestureState private var magnify: CGFloat = 1
     @GestureState private var rotate: Angle = .zero
+    /// 長押しに成功して「持ち上げ」状態になっているか。表示演出（1.05倍・影）に使う。
+    @GestureState private var isLifted: Bool = false
     @State private var popScale: CGFloat = 1
     @State private var hasBroughtToFront = false
-    /// ジェスチャ終了直後に表示する暫定 placement。
-    /// `@GestureState` は gesture 終了で即 0 に戻るため、永続化と ViewModel の再 fetch が
-    /// 返ってくるまでの一瞬「古い placement + offset=0」で描画されるのを埋める。
+    @State private var showActionMenu = false
     @State private var localPlacement: StickerPlacement?
 
     private let baseSize = CGSize(width: 62, height: 90)
+    private let longPressDuration: Double = 0.3
 
-    /// prop の placement と暫定値のどちらかを優先する実効値。
     private var effectivePlacement: StickerPlacement { localPlacement ?? placement }
-
-    /// 現在ジェスチャ中（@GestureState が有効な間）の表示用派生値。
-    private var liveX: Double {
-        guard boardSize.width > 0 else { return effectivePlacement.x }
-        let base = effectivePlacement.x * boardSize.width
-        return ((base + dragOffset.width) / boardSize.width).clamped(to: StickerPlacement.xRange)
-    }
-    private var liveY: Double {
-        guard boardSize.height > 0 else { return effectivePlacement.y }
-        let base = effectivePlacement.y * boardSize.height
-        return ((base + dragOffset.height) / boardSize.height).clamped(to: StickerPlacement.yRange)
-    }
-    private var liveScale: Double {
-        (effectivePlacement.scale * magnify).clamped(to: StickerPlacement.scaleRange)
-    }
-    private var liveRotation: Double {
-        (effectivePlacement.rotationDegrees + rotate.degrees).clamped(to: StickerPlacement.rotationRange)
-    }
 
     var body: some View {
         let center = CGPoint(x: effectivePlacement.x * boardSize.width, y: effectivePlacement.y * boardSize.height)
-        let isMoving = dragOffset != .zero || magnify != 1 || rotate != .zero
+        let isMoving = isLifted || magnify != 1 || rotate != .zero
+        let liveScale = (effectivePlacement.scale * magnify).clamped(to: StickerPlacement.scaleRange)
+        let liveRotation = (effectivePlacement.rotationDegrees + rotate.degrees).clamped(to: StickerPlacement.rotationRange)
 
         StickerView(
             cover: book.cover,
@@ -57,27 +42,47 @@ struct StickerDraggable: View {
         .scaleEffect((isMoving ? liveScale * 1.05 : liveScale) * popScale)
         .rotationEffect(.degrees(liveRotation))
         .shadow(color: ColorToken.ink.opacity(isMoving ? 0.3 : 0), radius: isMoving ? 14 : 0, y: isMoving ? 14 : 0)
-        .position(x: center.x + dragOffset.width, y: center.y + dragOffset.height)
+        .position(x: center.x + dragTranslation.width, y: center.y + dragTranslation.height)
         .onTapGesture {
             router.detailBookID = book.id
         }
-        .contextMenu {
-            Button("最前面へ") { Task { await viewModel.didTouchSticker(id: book.id) } }
-            Button("積読に戻す") { Task { await viewModel.returnToPile(id: book.id) } }
-            Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
-        }
-        // SwiftUI の @GestureState は .onEnded 実行時に既に初期値へリセットされるため、
-        // .onEnded の `value` から最終値を受け取って persistEnd に渡す必要がある。
+        // 長押し → ドラッグの sequence。長押しに達するまでドラッグは発火しない。
+        // ドラッグに移行しなかった（≒ほぼ動かさず離した）場合は confirmationDialog を出す。
         .gesture(
-            DragGesture(minimumDistance: 4)
-                .updating($dragOffset) { value, state, _ in
-                    state = value.translation
+            LongPressGesture(minimumDuration: longPressDuration)
+                .sequenced(before: DragGesture(minimumDistance: 0))
+                .updating($isLifted) { value, state, _ in
+                    switch value {
+                    case .first:
+                        state = false
+                    case .second(let longPressed, _):
+                        state = longPressed
+                    }
                 }
-                .onChanged { _ in bringToFrontOnce() }
+                .updating($dragTranslation) { value, state, _ in
+                    if case .second(true, let drag?) = value {
+                        state = drag.translation
+                    }
+                }
+                .onChanged { value in
+                    if case .second(true, _) = value {
+                        bringToFrontOnce()
+                    }
+                }
                 .onEnded { value in
-                    persistEnd(translation: value.translation, magnification: 1, rotation: .zero)
+                    guard case .second(true, let drag) = value else { return }
+                    let translation = drag?.translation ?? .zero
+                    let distance = hypot(translation.width, translation.height)
+                    if distance < 4 {
+                        // 長押ししたが動かさなかった → アクションメニュー
+                        showActionMenu = true
+                        hasBroughtToFront = false
+                    } else {
+                        persistEnd(translation: translation, magnification: 1, rotation: .zero)
+                    }
                 }
         )
+        // ピンチ・回転は 2 本指なので長押し不要。従来どおり同時成立。
         .simultaneousGesture(
             MagnifyGesture()
                 .updating($magnify) { value, state, _ in
@@ -98,6 +103,18 @@ struct StickerDraggable: View {
                     persistEnd(translation: .zero, magnification: 1, rotation: value.rotation)
                 }
         )
+        .confirmationDialog("この本を", isPresented: $showActionMenu, titleVisibility: .hidden) {
+            Button("最前面へ") { Task { await viewModel.didTouchSticker(id: book.id) } }
+            Button("積読に戻す") { Task { await viewModel.returnToPile(id: book.id) } }
+            Button("削除", role: .destructive) { Task { await viewModel.deleteBook(id: book.id) } }
+            Button("キャンセル", role: .cancel) {}
+        }
+        .onChange(of: isLifted) { _, newValue in
+            if newValue {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                bringToFrontOnce()
+            }
+        }
         .onChange(of: placement) { _, newValue in
             if let local = localPlacement, local == newValue {
                 localPlacement = nil
@@ -121,8 +138,6 @@ struct StickerDraggable: View {
         Task { await viewModel.didTouchSticker(id: book.id) }
     }
 
-    /// ジェスチャ終了時の最終値から次の placement を決めて永続化を要求する。
-    /// `@GestureState` に頼らず、呼び出し側（onEnded クロージャ）から value を直接受け取る。
     private func persistEnd(translation: CGSize, magnification: CGFloat, rotation: Angle) {
         let base = effectivePlacement
         let nextX: Double
@@ -139,7 +154,6 @@ struct StickerDraggable: View {
         let nextScale = (base.scale * magnification).clamped(to: StickerPlacement.scaleRange)
         let nextRotation = (base.rotationDegrees + rotation.degrees).clamped(to: StickerPlacement.rotationRange)
         let next = StickerPlacement(x: nextX, y: nextY, rotationDegrees: nextRotation, scale: nextScale, zIndex: base.zIndex)
-        // UI に即反映。prop が追いつくまで localPlacement が表示を担う。
         localPlacement = next
         hasBroughtToFront = false
         Task { await viewModel.didEndGesture(id: book.id, placement: next) }
