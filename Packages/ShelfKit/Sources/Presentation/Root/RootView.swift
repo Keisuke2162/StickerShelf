@@ -44,7 +44,9 @@ public struct RootView: View {
         case .pile:
             PileView(container: container, router: router)
         case .book:
-            AddBookView(container: container, router: router)
+            NavigationStack {
+                AddBookView(container: container, router: router)
+            }
         case .calendar:
             CalendarView(container: container, router: router)
         case .settings:

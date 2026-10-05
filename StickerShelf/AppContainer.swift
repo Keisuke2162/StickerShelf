@@ -13,7 +13,7 @@ public struct AppContainer: Sendable {
     public static func makeDefault(launchArguments: [String] = CommandLine.arguments) -> AppContainer {
         let options = StartupOptions.parse(from: launchArguments)
 
-        let schema = Schema([BookRecord.self, BoardRecord.self])
+        let schema = Schema([BookRecord.self, BoardRecord.self, MemoRecord.self])
         // -SeedSampleData は「サンプルを追加投入」のためのフラグで、永続化の挙動とは切り離す。
         // ModelContainer 失敗時はインメモリにフォールバックして起動クラッシュを回避する。
         let container: ModelContainer = {
@@ -28,6 +28,7 @@ public struct AppContainer: Sendable {
 
         let bookRepository = SwiftDataBookRepository(modelContainer: container)
         let boardRepository = SwiftDataBoardRepository(modelContainer: container)
+        let memoRepository = SwiftDataMemoRepository(modelContainer: container)
 
         let bundleID = Bundle.main.bundleIdentifier ?? "com.example.StickerShelf"
         let fallback = InfoPlistAPIKeyProvider()
@@ -79,10 +80,14 @@ public struct AppContainer: Sendable {
             moveBookToBoard: MoveBookToBoardUseCase(books: bookRepository),
             markAsRead: MarkAsReadUseCase(books: bookRepository),
             unmarkAsRead: UnmarkAsReadUseCase(books: bookRepository),
+            addMemo: AddMemoUseCase(memos: memoRepository),
+            fetchMemos: FetchMemosUseCase(memos: memoRepository),
+            deleteMemo: DeleteMemoUseCase(memos: memoRepository),
             searchPreferences: searchPreferences,
             coverImages: covers,
             bookChanges: { bookRepository.changes() },
-            boardChanges: { boardRepository.changes() }
+            boardChanges: { boardRepository.changes() },
+            memoChanges: { memoRepository.changes() }
         )
 
         let app = AppContainer(presentation: presentation, startupOptions: options)

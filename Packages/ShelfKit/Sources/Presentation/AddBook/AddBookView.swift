@@ -11,16 +11,20 @@ public struct AddBookView: View {
     @State private var showManualEntry = false
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
+    @State private var showMemoList = false
 
-    public init(container: PresentationContainer, router: Router) {
+    public init(container: PresentationContainer, router: Router, initialKeyword: String = "") {
         self.container = container
         self.router = router
-        self._viewModel = State(initialValue: AddBookViewModel(container: container))
+        self._viewModel = State(initialValue: AddBookViewModel(container: container, initialKeyword: initialKeyword))
     }
 
     public var body: some View {
-        NavigationStack {
-            ScrollView {
+        contentBody
+    }
+
+    private var contentBody: some View {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     searchBar
                     if viewModel.isSearching {
@@ -68,6 +72,13 @@ public struct AddBookView: View {
             .navigationTitle("本を追加")
             .navigationBarTitleDisplayMode(.inline)
             .task { await viewModel.loadBoards() }
+            .task {
+                // 初期キーワードが与えられていれば自動で検索を走らせる（メモからの遷移で使う）。
+                let trimmed = viewModel.keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty, viewModel.results.isEmpty {
+                    await viewModel.search(keyword: trimmed)
+                }
+            }
             .sheet(isPresented: $showScanner) {
                 BarcodeScannerView { isbn in
                     showScanner = false
@@ -98,7 +109,9 @@ public struct AddBookView: View {
                 }
                 Button("キャンセル", role: .cancel) { newBoardName = "" }
             }
-        }
+            .navigationDestination(isPresented: $showMemoList) {
+                MemoListView(container: container, router: router)
+            }
     }
 
     private var searchBar: some View {
@@ -131,6 +144,16 @@ public struct AddBookView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("手動で登録")
+
+            Button { showMemoList = true } label: {
+                Image(systemName: "list.bullet.clipboard")
+                    .foregroundStyle(ColorToken.ink)
+                    .frame(width: 48, height: 48)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.surface))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("気になる本メモを開く")
         }
     }
 

@@ -29,10 +29,14 @@ public struct PresentationContainer: Sendable {
     public let moveBookToBoard: any MoveBookToBoardUseCaseProtocol
     public let markAsRead: any MarkAsReadUseCaseProtocol
     public let unmarkAsRead: any UnmarkAsReadUseCaseProtocol
+    public let addMemo: any AddMemoUseCaseProtocol
+    public let fetchMemos: any FetchMemosUseCaseProtocol
+    public let deleteMemo: any DeleteMemoUseCaseProtocol
     public let searchPreferences: any SearchPreferenceRepository
     public let coverImages: any CoverImageRepository
     public let bookChanges: @Sendable () -> AsyncStream<Void>
     public let boardChanges: @Sendable () -> AsyncStream<Void>
+    public let memoChanges: @Sendable () -> AsyncStream<Void>
 
     public init(
         searchCatalog: any SearchCatalogUseCaseProtocol,
@@ -58,10 +62,14 @@ public struct PresentationContainer: Sendable {
         moveBookToBoard: any MoveBookToBoardUseCaseProtocol,
         markAsRead: any MarkAsReadUseCaseProtocol,
         unmarkAsRead: any UnmarkAsReadUseCaseProtocol,
+        addMemo: any AddMemoUseCaseProtocol,
+        fetchMemos: any FetchMemosUseCaseProtocol,
+        deleteMemo: any DeleteMemoUseCaseProtocol,
         searchPreferences: any SearchPreferenceRepository,
         coverImages: any CoverImageRepository,
         bookChanges: @escaping @Sendable () -> AsyncStream<Void>,
-        boardChanges: @escaping @Sendable () -> AsyncStream<Void>
+        boardChanges: @escaping @Sendable () -> AsyncStream<Void>,
+        memoChanges: @escaping @Sendable () -> AsyncStream<Void>
     ) {
         self.searchCatalog = searchCatalog
         self.findCatalogByISBN = findCatalogByISBN
@@ -86,10 +94,14 @@ public struct PresentationContainer: Sendable {
         self.moveBookToBoard = moveBookToBoard
         self.markAsRead = markAsRead
         self.unmarkAsRead = unmarkAsRead
+        self.addMemo = addMemo
+        self.fetchMemos = fetchMemos
+        self.deleteMemo = deleteMemo
         self.searchPreferences = searchPreferences
         self.coverImages = coverImages
         self.bookChanges = bookChanges
         self.boardChanges = boardChanges
+        self.memoChanges = memoChanges
     }
 }
 

@@ -15,6 +15,7 @@ public enum PreviewSupport {
         let mangaBoard = (try? Board(kind: .pile, name: "漫画", createdAt: Date(), sortOrder: 4))!
         let repository = PreviewBookRepository(initial: sampleBooks(readingBoardID: readingBoard.id, finishedBoardID: finishedBoard.id, pileBoardIDs: [laterBoard.id, mangaBoard.id]))
         let boardRepo = PreviewBoardRepository(initial: [readingBoard, finishedBoard, laterBoard, mangaBoard])
+        let memoRepo = PreviewMemoRepository()
         let catalog = PreviewCatalogRepository()
         let apiKeys = PreviewAPIKeyRepository()
         let covers = PreviewCoverImageRepository()
@@ -43,10 +44,14 @@ public enum PreviewSupport {
             moveBookToBoard: MoveBookToBoardUseCase(books: repository),
             markAsRead: MarkAsReadUseCase(books: repository),
             unmarkAsRead: UnmarkAsReadUseCase(books: repository),
+            addMemo: AddMemoUseCase(memos: memoRepo),
+            fetchMemos: FetchMemosUseCase(memos: memoRepo),
+            deleteMemo: DeleteMemoUseCase(memos: memoRepo),
             searchPreferences: prefs,
             coverImages: covers,
             bookChanges: { repository.changes() },
-            boardChanges: { boardRepo.changes() }
+            boardChanges: { boardRepo.changes() },
+            memoChanges: { memoRepo.changes() }
         )
     }
 
@@ -145,6 +150,40 @@ actor PreviewBoardRepository: BoardRepository {
     func fetch(id: BoardID) async throws -> Board? { storage[id] }
     func save(_ board: Board) async throws { storage[board.id] = board; broadcast() }
     func delete(id: BoardID) async throws { storage.removeValue(forKey: id); broadcast() }
+
+    nonisolated func changes() -> AsyncStream<Void> {
+        AsyncStream { continuation in
+            let token = UUID()
+            self.continuationsLock.lock()
+            self.continuations[token] = continuation
+            self.continuationsLock.unlock()
+            continuation.yield(())
+            continuation.onTermination = { [weak self] _ in
+                self?.continuationsLock.lock()
+                self?.continuations.removeValue(forKey: token)
+                self?.continuationsLock.unlock()
+            }
+        }
+    }
+
+    private nonisolated func broadcast() {
+        continuationsLock.lock()
+        let conts = Array(continuations.values)
+        continuationsLock.unlock()
+        for c in conts { c.yield(()) }
+    }
+}
+
+actor PreviewMemoRepository: MemoRepository {
+    private var storage: [UUID: TitleMemo] = [:]
+    nonisolated(unsafe) private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
+    nonisolated private let continuationsLock = NSLock()
+
+    func fetchAll() async throws -> [TitleMemo] {
+        storage.values.sorted { $0.createdAt > $1.createdAt }
+    }
+    func save(_ memo: TitleMemo) async throws { storage[memo.id] = memo; broadcast() }
+    func delete(id: UUID) async throws { storage.removeValue(forKey: id); broadcast() }
 
     nonisolated func changes() -> AsyncStream<Void> {
         AsyncStream { continuation in

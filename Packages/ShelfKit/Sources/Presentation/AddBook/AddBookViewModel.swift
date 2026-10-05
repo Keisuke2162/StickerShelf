@@ -28,8 +28,9 @@ public final class AddBookViewModel {
     private let container: PresentationContainer
     private var searchTask: Task<Void, Never>?
 
-    public init(container: PresentationContainer) {
+    public init(container: PresentationContainer, initialKeyword: String = "") {
         self.container = container
+        self.keyword = initialKeyword
     }
 
     public var boardsForCurrentDestination: [Board] {
