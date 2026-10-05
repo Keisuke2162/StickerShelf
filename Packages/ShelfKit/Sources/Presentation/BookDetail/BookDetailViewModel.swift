@@ -78,6 +78,27 @@ public final class BookDetailViewModel {
             errorMessage = DomainErrorMessage.describe(error)
         }
     }
+
+    public func markAsRead(on date: Date) async {
+        do {
+            book = try await container.markAsRead.execute(id: bookID, date: date)
+        } catch {
+            errorMessage = DomainErrorMessage.describe(error)
+        }
+    }
+
+    public func unmarkAsRead(on date: Date) async {
+        do {
+            book = try await container.unmarkAsRead.execute(id: bookID, date: date)
+        } catch {
+            errorMessage = DomainErrorMessage.describe(error)
+        }
+    }
+
+    /// 読んだ日ログを降順で返す（新しい日付が上）。
+    public var sortedReadDays: [Date] {
+        (book?.readDays ?? []).sorted(by: >)
+    }
 }
 
 #endif

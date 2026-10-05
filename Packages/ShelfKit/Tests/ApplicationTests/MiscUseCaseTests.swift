@@ -30,13 +30,15 @@ struct MiscUseCaseTests {
     @Test func fetchReadingCalendar_delegatesToReadingCalendar() async throws {
         let cal = Calendar(identifier: .gregorian)
         let date = cal.date(from: DateComponents(year: 2026, month: 10, day: 15))!
-        let book = try Book(
+        var book = try Book(
             metadata: try BookMetadata(title: "完了"),
             status: .finished,
             period: ReadingPeriod(startedAt: date, finishedAt: date),
             sticker: .init(x: 0.5, y: 0.5, rotationDegrees: 0, scale: 1, zIndex: 1),
             addedAt: date
         )
+        // 2026-10-06: カレンダーは読了日ではなく readDays を見るようになったので「読んだ」ログを足す。
+        book.markAsRead(on: date, calendar: cal)
         let repo = InMemoryBookRepository([book])
         let useCase = FetchReadingCalendarUseCase(books: repo, calendar: ReadingCalendar(calendar: cal))
         let summary = try await useCase.execute(year: 2026, month: 10)

@@ -16,6 +16,9 @@ public struct Book: Identifiable, Equatable, Sendable {
     /// 積読ステータス（.unread）では積読側 Board に属する。未分類の場合は nil。
     public private(set) var boardID: BoardID?
     public let addedAt: Date
+    /// 「読んだ」ボタンで記録した日付のログ。各要素は `calendar.startOfDay` で正規化される。
+    /// カレンダー表示はこの集合をもとに書影を表示する（status の `.finished` とは独立）。
+    public private(set) var readDays: Set<Date>
 
     /// 新規作成用。不変条件を検証する。
     public init(
@@ -30,7 +33,8 @@ public struct Book: Identifiable, Equatable, Sendable {
         stickerEdge: StickerEdge = .white,
         cover: CoverImage = .none,
         boardID: BoardID? = nil,
-        addedAt: Date
+        addedAt: Date,
+        readDays: Set<Date> = []
     ) throws {
         if (status == .unread) != (sticker == nil) {
             throw DomainError.stickerNotAllowedForUnread
@@ -51,6 +55,7 @@ public struct Book: Identifiable, Equatable, Sendable {
         self.cover = cover
         self.boardID = boardID
         self.addedAt = addedAt
+        self.readDays = readDays
     }
 
     /// 永続層からの再構築用。既にアプリ内で生成済みのデータを信頼して載せ替えるときのみ使う。
@@ -66,7 +71,8 @@ public struct Book: Identifiable, Equatable, Sendable {
         stickerEdge: StickerEdge,
         cover: CoverImage,
         boardID: BoardID?,
-        addedAt: Date
+        addedAt: Date,
+        readDays: Set<Date> = []
     ) -> Book {
         Book(
             reconstructing: id,
@@ -80,7 +86,8 @@ public struct Book: Identifiable, Equatable, Sendable {
             stickerEdge: stickerEdge,
             cover: cover,
             boardID: boardID,
-            addedAt: addedAt
+            addedAt: addedAt,
+            readDays: readDays
         )
     }
 
@@ -96,7 +103,8 @@ public struct Book: Identifiable, Equatable, Sendable {
         stickerEdge: StickerEdge,
         cover: CoverImage,
         boardID: BoardID?,
-        addedAt: Date
+        addedAt: Date,
+        readDays: Set<Date>
     ) {
         self.id = id
         self.metadata = metadata
@@ -110,6 +118,7 @@ public struct Book: Identifiable, Equatable, Sendable {
         self.cover = cover
         self.boardID = boardID
         self.addedAt = addedAt
+        self.readDays = readDays
     }
 
     public mutating func moveToBoard(_ boardID: BoardID?) {
@@ -202,5 +211,15 @@ public struct Book: Identifiable, Equatable, Sendable {
 
     public mutating func replaceMetadata(_ metadata: BookMetadata) {
         self.metadata = metadata
+    }
+
+    /// 指定日に「読んだ」ログを 1 つ追加する（同じ日は冪等）。
+    public mutating func markAsRead(on date: Date, calendar: Calendar = .current) {
+        readDays.insert(calendar.startOfDay(for: date))
+    }
+
+    /// 指定日の「読んだ」ログを取り消す。
+    public mutating func unmarkAsRead(on date: Date, calendar: Calendar = .current) {
+        readDays.remove(calendar.startOfDay(for: date))
     }
 }

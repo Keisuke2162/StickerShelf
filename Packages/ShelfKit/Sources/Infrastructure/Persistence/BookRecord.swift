@@ -45,6 +45,9 @@ public final class BookRecord {
 
     public var addedAt: Date = Date(timeIntervalSince1970: 0)
 
+    /// 「読んだ」ボタンで記録された日付（startOfDay 正規化、重複なし）。
+    public var readDays: [Date] = []
+
     public init(
         id: UUID,
         title: String,
@@ -72,7 +75,8 @@ public final class BookRecord {
         coverRemoteURL: URL?,
         coverLocalFileName: String?,
         boardIDValue: UUID?,
-        addedAt: Date
+        addedAt: Date,
+        readDays: [Date] = []
     ) {
         self.id = id
         self.title = title
@@ -101,5 +105,6 @@ public final class BookRecord {
         self.coverLocalFileName = coverLocalFileName
         self.boardIDValue = boardIDValue
         self.addedAt = addedAt
+        self.readDays = readDays
     }
 }

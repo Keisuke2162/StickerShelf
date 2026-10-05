@@ -27,6 +27,8 @@ public struct PresentationContainer: Sendable {
     public let createBoard: any CreateBoardUseCaseProtocol
     public let deleteBoard: any DeleteBoardUseCaseProtocol
     public let moveBookToBoard: any MoveBookToBoardUseCaseProtocol
+    public let markAsRead: any MarkAsReadUseCaseProtocol
+    public let unmarkAsRead: any UnmarkAsReadUseCaseProtocol
     public let searchPreferences: any SearchPreferenceRepository
     public let coverImages: any CoverImageRepository
     public let bookChanges: @Sendable () -> AsyncStream<Void>
@@ -54,6 +56,8 @@ public struct PresentationContainer: Sendable {
         createBoard: any CreateBoardUseCaseProtocol,
         deleteBoard: any DeleteBoardUseCaseProtocol,
         moveBookToBoard: any MoveBookToBoardUseCaseProtocol,
+        markAsRead: any MarkAsReadUseCaseProtocol,
+        unmarkAsRead: any UnmarkAsReadUseCaseProtocol,
         searchPreferences: any SearchPreferenceRepository,
         coverImages: any CoverImageRepository,
         bookChanges: @escaping @Sendable () -> AsyncStream<Void>,
@@ -80,6 +84,8 @@ public struct PresentationContainer: Sendable {
         self.createBoard = createBoard
         self.deleteBoard = deleteBoard
         self.moveBookToBoard = moveBookToBoard
+        self.markAsRead = markAsRead
+        self.unmarkAsRead = unmarkAsRead
         self.searchPreferences = searchPreferences
         self.coverImages = coverImages
         self.bookChanges = bookChanges

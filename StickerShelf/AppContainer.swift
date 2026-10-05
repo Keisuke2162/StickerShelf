@@ -77,6 +77,8 @@ public struct AppContainer: Sendable {
             createBoard: CreateBoardUseCase(boards: boardRepository),
             deleteBoard: DeleteBoardUseCase(boards: boardRepository, books: bookRepository),
             moveBookToBoard: MoveBookToBoardUseCase(books: bookRepository),
+            markAsRead: MarkAsReadUseCase(books: bookRepository),
+            unmarkAsRead: UnmarkAsReadUseCase(books: bookRepository),
             searchPreferences: searchPreferences,
             coverImages: covers,
             bookChanges: { bookRepository.changes() },

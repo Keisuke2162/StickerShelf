@@ -11,6 +11,7 @@ public struct BookDetailSheet: View {
     @State private var showDeleteConfirm = false
     @State private var pickerItem: PhotosPickerItem?
     @State private var showDocumentScanner = false
+    @State private var readDate: Date = Date()
     @Environment(\.dismiss) private var dismiss
 
     public init(container: PresentationContainer, bookID: BookID, router: Router) {
@@ -41,6 +42,7 @@ public struct BookDetailSheet: View {
                 statusSegment(draft: draft)
                 boardPicker(draft: draft)
                 dateGrid(draft: draft)
+                readSection
                 edgePicker(draft: draft)
                 coverReplace()
             }
@@ -281,6 +283,66 @@ public struct BookDetailSheet: View {
 
     private func edgeLabel(_ edge: StickerEdge) -> String {
         switch edge { case .white: return "白フチ"; case .none: return "フチなし"; case .holo: return "ホロ" }
+    }
+
+    /// 「読んだ」セクション。日付フォーム + 「読んだ」ボタン + 読んだ日ログ。
+    @ViewBuilder
+    private var readSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("読んだ").font(FontToken.sectionTitle())
+
+            HStack(spacing: 8) {
+                DatePicker("", selection: $readDate, displayedComponents: .date)
+                    .labelsHidden()
+                Spacer(minLength: 8)
+                Button {
+                    let date = readDate
+                    Task { await viewModel.markAsRead(on: date) }
+                } label: {
+                    Text("読んだ")
+                        .font(FontToken.sectionTitle())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20).padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(ColorToken.accent))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if !viewModel.sortedReadDays.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("読んだ日ログ").font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
+                    VStack(spacing: 0) {
+                        ForEach(viewModel.sortedReadDays, id: \.self) { day in
+                            readLogRow(day: day)
+                            if day != viewModel.sortedReadDays.last {
+                                Divider()
+                            }
+                        }
+                    }
+                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.surface))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func readLogRow(day: Date) -> some View {
+        HStack {
+            Text(day, format: .dateTime.year().month().day().weekday(.narrow))
+                .font(FontToken.bodyRegular())
+                .foregroundStyle(ColorToken.ink)
+            Spacer()
+            Button {
+                Task { await viewModel.unmarkAsRead(on: day) }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(ColorToken.inkTertiary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("この読んだ日を削除")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     private func coverReplace() -> some View {

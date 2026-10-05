@@ -41,6 +41,8 @@ public enum PreviewSupport {
             createBoard: CreateBoardUseCase(boards: boardRepo),
             deleteBoard: DeleteBoardUseCase(boards: boardRepo, books: repository),
             moveBookToBoard: MoveBookToBoardUseCase(books: repository),
+            markAsRead: MarkAsReadUseCase(books: repository),
+            unmarkAsRead: UnmarkAsReadUseCase(books: repository),
             searchPreferences: prefs,
             coverImages: covers,
             bookChanges: { repository.changes() },
