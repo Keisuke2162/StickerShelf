@@ -24,6 +24,12 @@ public struct MemoListView: View {
         .background(ColorToken.boardBackground.ignoresSafeArea())
         .navigationTitle("気になる本メモ")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("閉じる") { inputFocused = false }
+            }
+        }
         .task { await viewModel.reload() }
         .task { await viewModel.start() }
         .onAppear { inputFocused = true }

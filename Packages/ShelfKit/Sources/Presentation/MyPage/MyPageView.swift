@@ -15,7 +15,30 @@ public struct MyPageView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
+            VStack(spacing: 12) {
+                header
+                settingsForm
+            }
+            .background(ColorToken.boardBackground.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .task { await viewModel.reload() }
+        }
+    }
+
+    /// 本棚/積読/カレンダーと同じ screenTitle 風ヘッダー。
+    private var header: some View {
+        HStack {
+            Text("マイページ")
+                .font(FontToken.screenTitle())
+                .foregroundStyle(ColorToken.ink)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+    }
+
+    private var settingsForm: some View {
+        Form {
                 Section {
                     userInfoRow
                 }
@@ -77,11 +100,7 @@ public struct MyPageView: View {
                     NavigationLink("ライセンス") { LicenseView() }
                 }
             }
-            .navigationTitle("マイページ")
             .scrollContentBackground(.hidden)
-            .background(ColorToken.boardBackground.ignoresSafeArea())
-            .task { await viewModel.reload() }
-        }
     }
 
     /// 仮のユーザー情報。将来 Account 機能が入ったら差し替える。

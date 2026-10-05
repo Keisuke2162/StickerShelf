@@ -20,7 +20,32 @@ public struct AddBookView: View {
     }
 
     public var body: some View {
-        contentBody
+        VStack(spacing: 12) {
+            header
+            contentBody
+        }
+        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    /// 本棚/積読/カレンダーと同じ screenTitle のヘッダー。右端にメモ画面への遷移ボタン。
+    private var header: some View {
+        HStack {
+            Text("本を追加")
+                .font(FontToken.screenTitle())
+                .foregroundStyle(ColorToken.ink)
+            Spacer()
+            Button { showMemoList = true } label: {
+                Image(systemName: "list.bullet.clipboard")
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(ColorToken.surface))
+                    .foregroundStyle(ColorToken.ink)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("気になる本メモを開く")
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
     }
 
     private var contentBody: some View {
@@ -58,7 +83,6 @@ public struct AddBookView: View {
                 }
                 .padding(20)
             }
-            .background(ColorToken.boardBackground.ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 10) {
                     destinationSegment
@@ -69,8 +93,6 @@ public struct AddBookView: View {
                 .padding(.vertical, 10)
                 .background(ColorToken.boardBackground)
             }
-            .navigationTitle("本を追加")
-            .navigationBarTitleDisplayMode(.inline)
             .task { await viewModel.loadBoards() }
             .task {
                 // 初期キーワードが与えられていれば自動で検索を走らせる（メモからの遷移で使う）。
@@ -144,16 +166,6 @@ public struct AddBookView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("手動で登録")
-
-            Button { showMemoList = true } label: {
-                Image(systemName: "list.bullet.clipboard")
-                    .foregroundStyle(ColorToken.ink)
-                    .frame(width: 48, height: 48)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.surface))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(ColorToken.hairline, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("気になる本メモを開く")
         }
     }
 
