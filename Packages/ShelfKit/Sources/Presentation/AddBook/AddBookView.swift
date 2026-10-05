@@ -51,18 +51,20 @@ public struct AddBookView: View {
                         }
                         .frame(maxWidth: .infinity).padding()
                     }
-                    destinationPicker
-                    boardPicker
                     DatePicker("購入日", selection: $viewModel.purchasedAt, displayedComponents: .date)
                 }
                 .padding(20)
             }
             .background(ColorToken.boardBackground.ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
-                actionButton
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(ColorToken.boardBackground)
+                VStack(spacing: 10) {
+                    destinationSegment
+                    boardPicker
+                    actionButton
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(ColorToken.boardBackground)
             }
             .navigationTitle("本を追加")
             .navigationBarTitleDisplayMode(.inline)
@@ -185,66 +187,60 @@ public struct AddBookView: View {
         }
     }
 
-    private var destinationPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("どこに置く？").font(FontToken.sectionTitle())
-            HStack(spacing: 8) {
-                destinationCard(.shelf, title: "本棚", description: "ボードに貼る")
-                destinationCard(.pile, title: "積読", description: "下に落とす")
-            }
+    /// 本棚／積読のコンパクトな 2 択セグメント。フッターに置くため見出しなし。
+    private var destinationSegment: some View {
+        HStack(spacing: 4) {
+            destinationSegmentButton(.shelf, title: "本棚")
+            destinationSegmentButton(.pile, title: "積読")
         }
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.segmentTrack))
     }
 
-    private func destinationCard(_ destination: AddBookViewModel.Destination, title: String, description: String) -> some View {
+    private func destinationSegmentButton(_ destination: AddBookViewModel.Destination, title: String) -> some View {
         let selected = viewModel.destination == destination
         return Button {
             viewModel.destination = destination
         } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(FontToken.sectionTitle()).foregroundStyle(ColorToken.ink)
-                Text(description).font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: 12).fill(selected ? ColorToken.accentSoft : ColorToken.surface))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? ColorToken.accent : ColorToken.hairline, lineWidth: 2))
+            Text(title)
+                .font(FontToken.sectionTitle())
+                .foregroundStyle(selected ? .white : ColorToken.inkSecondary)
+                .frame(maxWidth: .infinity).frame(height: 36)
+                .background(RoundedRectangle(cornerRadius: 8).fill(selected ? ColorToken.accent : .clear))
         }
         .buttonStyle(.plain)
     }
 
+    /// フッターに置くコンパクトなフォルダピッカー。
     private var boardPicker: some View {
         let isShelf = viewModel.destination == .shelf
-        let title = isShelf ? "どの本棚に貼る？" : "どのフォルダに入れる？（任意）"
         let addLabel = isShelf ? "本棚を追加" : "フォルダを追加"
-        return VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(FontToken.sectionTitle())
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    if !isShelf {
-                        Chip(title: "未分類", isSelected: viewModel.selectedPileBoardID == nil) {
-                            viewModel.selectedPileBoardID = nil
-                        }
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                if !isShelf {
+                    Chip(title: "未分類", isSelected: viewModel.selectedPileBoardID == nil) {
+                        viewModel.selectedPileBoardID = nil
                     }
-                    ForEach(viewModel.boardsForCurrentDestination) { board in
-                        let selected = (isShelf ? viewModel.selectedShelfBoardID : viewModel.selectedPileBoardID) == board.id
-                        Chip(title: board.name, isSelected: selected) {
-                            if isShelf { viewModel.selectedShelfBoardID = board.id }
-                            else { viewModel.selectedPileBoardID = board.id }
-                        }
-                    }
-                    Button {
-                        showCreateBoard = true
-                    } label: {
-                        Label(addLabel, systemImage: "plus")
-                            .font(FontToken.label())
-                            .foregroundStyle(ColorToken.ink)
-                            .padding(.horizontal, 14).padding(.vertical, 8)
-                            .background(Capsule().fill(ColorToken.surface))
-                            .overlay(Capsule().stroke(ColorToken.hairline, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .frame(minHeight: 44)
                 }
+                ForEach(viewModel.boardsForCurrentDestination) { board in
+                    let selected = (isShelf ? viewModel.selectedShelfBoardID : viewModel.selectedPileBoardID) == board.id
+                    Chip(title: board.name, isSelected: selected) {
+                        if isShelf { viewModel.selectedShelfBoardID = board.id }
+                        else { viewModel.selectedPileBoardID = board.id }
+                    }
+                }
+                Button {
+                    showCreateBoard = true
+                } label: {
+                    Label(addLabel, systemImage: "plus")
+                        .font(FontToken.label())
+                        .foregroundStyle(ColorToken.ink)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(Capsule().fill(ColorToken.surface))
+                        .overlay(Capsule().stroke(ColorToken.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .frame(minHeight: 44)
             }
         }
     }
