@@ -116,7 +116,6 @@ struct StickerDraggable: View {
         let framePadding: CGFloat = 6
         let frameW = scaledSize.width + framePadding * 2
         let frameH = scaledSize.height + framePadding * 2
-        let rotateHandleGap: CGFloat = 28
 
         ZStack {
             Rectangle()
@@ -124,23 +123,16 @@ struct StickerDraggable: View {
                 .frame(width: frameW, height: frameH)
                 .allowsHitTesting(false)
 
-            // 回転ハンドル（上部）
+            // 右下隅の統合ハンドル。ドラッグで scale + rotation を同時に更新する。
             handleCircle()
-                .offset(x: 0, y: -(frameH / 2) - rotateHandleGap)
-                .gesture(rotateGesture(frameHeight: frameH, handleGap: rotateHandleGap))
+                .overlay(
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(ColorToken.accent)
+                )
+                .offset(x: frameW / 2, y: frameH / 2)
+                .gesture(transformGesture())
 
-            // 回転ハンドルから枠まで繋ぐ短い線
-            Rectangle()
-                .fill(ColorToken.accent)
-                .frame(width: 1.5, height: rotateHandleGap)
-                .offset(x: 0, y: -(frameH / 2) - rotateHandleGap / 2)
-                .allowsHitTesting(false)
-
-            // 四隅のハンドル。四隅どれでも対角方向のドラッグで拡縮できる。
-            cornerHandle(dx: -frameW / 2, dy: -frameH / 2, sign: -1) // 左上
-            cornerHandle(dx:  frameW / 2, dy: -frameH / 2, sign: +1) // 右上は +x,-y → combined 使い方調整するより、同じ formula を使う
-            cornerHandle(dx: -frameW / 2, dy:  frameH / 2, sign: +1)
-            cornerHandle(dx:  frameW / 2, dy:  frameH / 2, sign: +1) // 右下
             // メニューボタン（枠の左上の外側）
             Button {
                 showActionMenu = true
@@ -158,17 +150,11 @@ struct StickerDraggable: View {
         .rotationEffect(.degrees(liveRotation))
     }
 
-    private func cornerHandle(dx: CGFloat, dy: CGFloat, sign: CGFloat) -> some View {
-        handleCircle()
-            .offset(x: dx, y: dy)
-            .gesture(resizeGesture(cornerDx: dx, cornerDy: dy))
-    }
-
     private func handleCircle() -> some View {
         Circle()
             .fill(.white)
             .overlay(Circle().stroke(ColorToken.accent, lineWidth: 2))
-            .frame(width: 18, height: 18)
+            .frame(width: 22, height: 22)
             .shadow(color: ColorToken.ink.opacity(0.25), radius: 2, y: 1)
     }
 
@@ -207,55 +193,30 @@ struct StickerDraggable: View {
             }
     }
 
-    /// 四隅ハンドルのドラッグ → 中心を基準にスケール変更。
-    /// 各ハンドルの対角方向（中心からハンドルへのベクトル）に沿った成分だけを拡縮量に反映。
-    private func resizeGesture(cornerDx: CGFloat, cornerDy: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 0)
-            .updating($resizeMultiplier) { value, state, _ in
-                state = Self.resizeMultiplier(from: value.translation,
-                                              cornerDx: cornerDx, cornerDy: cornerDy,
-                                              rotationDegrees: effectivePlacement.rotationDegrees)
-            }
-            .onChanged { _ in bringToFrontOnce() }
-            .onEnded { value in
-                let m = Self.resizeMultiplier(from: value.translation,
-                                              cornerDx: cornerDx, cornerDy: cornerDy,
-                                              rotationDegrees: effectivePlacement.rotationDegrees)
-                persistEnd(translation: .zero, scaleMultiplier: m, rotation: .zero)
-            }
-    }
-
-    private static func resizeMultiplier(from translation: CGSize,
-                                         cornerDx: CGFloat, cornerDy: CGFloat,
-                                         rotationDegrees: Double) -> Double {
-        // 親の .rotationEffect 下では DragGesture の translation は既に view のローカル座標系で返るので、
-        // 追加の逆回転補正は不要。そのまま「中心→ハンドル」方向への成分を取る。
-        let len = sqrt(cornerDx * cornerDx + cornerDy * cornerDy)
-        guard len > 0 else { return 1 }
-        let ux = cornerDx / len
-        let uy = cornerDy / len
-        let along = Double(translation.width) * Double(ux) + Double(translation.height) * Double(uy)
-        let m = (Double(len) + along) / Double(len)
-        return max(0.05, m)
-    }
-
-    /// 回転ハンドルのドラッグ → 中心軸での回転角を計算。
-    /// 書影ローカル座標（.rotationEffect 下）だとドラッグ中に書影自身が回転するたびに
-    /// translation の座標系が変わり挙動が暴れるため、ボード座標系に固定して
-    /// startLocation と現在 location から中心基準の角度差分を直接計算する。
-    private func rotateGesture(frameHeight: CGFloat, handleGap: CGFloat) -> some Gesture {
+    /// 右下隅の統合ハンドル。中心→開始位置と中心→現在位置の
+    /// 「距離の比」で scale、「角度の差」で rotation を同時に更新する。
+    /// ボード座標固定で、書影自身の回転の影響を受けない。
+    private func transformGesture() -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named("stickerBoard"))
+            .updating($resizeMultiplier) { value, state, _ in
+                state = Self.transformMultiplier(startLocation: value.startLocation,
+                                                 location: value.location,
+                                                 centerOnBoard: centerOnBoard())
+            }
             .updating($rotateDelta) { value, state, _ in
-                state = Self.rotateDelta(startLocation: value.startLocation,
-                                         location: value.location,
-                                         centerOnBoard: centerOnBoard())
+                state = Self.transformRotation(startLocation: value.startLocation,
+                                               location: value.location,
+                                               centerOnBoard: centerOnBoard())
             }
             .onChanged { _ in bringToFrontOnce() }
             .onEnded { value in
-                let d = Self.rotateDelta(startLocation: value.startLocation,
-                                         location: value.location,
-                                         centerOnBoard: centerOnBoard())
-                persistEnd(translation: .zero, scaleMultiplier: 1, rotation: d)
+                let m = Self.transformMultiplier(startLocation: value.startLocation,
+                                                 location: value.location,
+                                                 centerOnBoard: centerOnBoard())
+                let r = Self.transformRotation(startLocation: value.startLocation,
+                                               location: value.location,
+                                               centerOnBoard: centerOnBoard())
+                persistEnd(translation: .zero, scaleMultiplier: m, rotation: r)
             }
     }
 
@@ -265,8 +226,16 @@ struct StickerDraggable: View {
                 y: effectivePlacement.y * boardSize.height)
     }
 
-    private static func rotateDelta(startLocation: CGPoint, location: CGPoint, centerOnBoard: CGPoint) -> Angle {
-        // ボード座標系の中心→開始位置の角度と、中心→現在位置の角度の差分がそのまま回転量。
+    private static func transformMultiplier(startLocation: CGPoint, location: CGPoint, centerOnBoard: CGPoint) -> Double {
+        let startDist = hypot(Double(startLocation.x - centerOnBoard.x),
+                              Double(startLocation.y - centerOnBoard.y))
+        let currDist = hypot(Double(location.x - centerOnBoard.x),
+                             Double(location.y - centerOnBoard.y))
+        guard startDist > 1 else { return 1 }  // ハンドル極近接時のゼロ除算回避
+        return max(0.05, currDist / startDist)
+    }
+
+    private static func transformRotation(startLocation: CGPoint, location: CGPoint, centerOnBoard: CGPoint) -> Angle {
         let a0 = atan2(Double(startLocation.x - centerOnBoard.x), -Double(startLocation.y - centerOnBoard.y))
         let a1 = atan2(Double(location.x - centerOnBoard.x), -Double(location.y - centerOnBoard.y))
         var deltaDeg = (a1 - a0) * 180 / .pi
