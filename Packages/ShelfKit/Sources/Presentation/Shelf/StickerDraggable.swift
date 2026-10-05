@@ -227,22 +227,14 @@ struct StickerDraggable: View {
     private static func resizeMultiplier(from translation: CGSize,
                                          cornerDx: CGFloat, cornerDy: CGFloat,
                                          rotationDegrees: Double) -> Double {
-        // 親の .rotationEffect で translation は親座標系で与えられるため、
-        // ステッカーのローカル座標系に戻す（逆回転）。
-        let a = -rotationDegrees * .pi / 180
-        let localDx = cos(a) * translation.width - sin(a) * translation.height
-        let localDy = sin(a) * translation.width + cos(a) * translation.height
-        // 中心→ハンドルの方向ベクトル（単位化）
+        // 親の .rotationEffect 下では DragGesture の translation は既に view のローカル座標系で返るので、
+        // 追加の逆回転補正は不要。そのまま「中心→ハンドル」方向への成分を取る。
         let len = sqrt(cornerDx * cornerDx + cornerDy * cornerDy)
         guard len > 0 else { return 1 }
         let ux = cornerDx / len
         let uy = cornerDy / len
-        // ドラッグ translation の方向成分
-        let along = Double(localDx) * Double(ux) + Double(localDy) * Double(uy)
-        // 現在ハンドルまでの距離（ローカル）
-        let baseLen = Double(len)
-        // 新しいスケール倍率 = (baseLen + along) / baseLen
-        let m = (baseLen + along) / baseLen
+        let along = Double(translation.width) * Double(ux) + Double(translation.height) * Double(uy)
+        let m = (Double(len) + along) / Double(len)
         return max(0.05, m)
     }
 
@@ -269,17 +261,15 @@ struct StickerDraggable: View {
                                     frameHeight: CGFloat,
                                     handleGap: CGFloat,
                                     rotationDegrees: Double) -> Angle {
-        let dist = frameHeight / 2 + handleGap
-        let rot = rotationDegrees * .pi / 180
-        // 現時点の回転ハンドル位置（親座標系。書影中心が原点）
-        let hx0 = -sin(rot) * dist
-        let hy0 = -cos(rot) * dist
-        let hxN = hx0 + translation.width
-        let hyN = hy0 + translation.height
-        // 中心→新位置の方向角（真上を 0 とする）
-        let newAngleRad = atan2(Double(hxN), -Double(hyN))
+        // .rotationEffect 下では translation はローカル座標なので、ハンドルの初期位置は常に (0, -dist)。
+        // 書影の現在角度 rotationDegrees は view transform として外側に残っているため、ここでは触らない。
+        let dist = Double(frameHeight / 2 + handleGap)
+        let hxN = Double(translation.width)
+        let hyN = -dist + Double(translation.height)
+        // 中心→新位置の方向角。真上 (0, -dist) が 0 度、時計回りに +。
+        let newAngleRad = atan2(hxN, -hyN)
         let newDegrees = newAngleRad * 180 / .pi
-        return .degrees(newDegrees - rotationDegrees)
+        return .degrees(newDegrees)
     }
 
     // MARK: - Side effects
