@@ -49,7 +49,7 @@ public struct RootView: View {
         case .calendar:
             CalendarView(container: container, router: router)
         case .settings:
-            SettingsView(container: container)
+            MyPageView(container: container)
         }
     }
 
