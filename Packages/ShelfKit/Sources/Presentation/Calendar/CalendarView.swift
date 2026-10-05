@@ -53,7 +53,7 @@ public struct CalendarView: View {
                     .background(RoundedRectangle(cornerRadius: 22).fill(ColorToken.surface))
                     .foregroundStyle(ColorToken.ink)
             }
-            Text("\(viewModel.year)年 \(viewModel.month)月").font(FontToken.sectionTitle()).foregroundStyle(ColorToken.ink)
+            Text(verbatim: "\(viewModel.year)年 \(viewModel.month)月").font(FontToken.sectionTitle()).foregroundStyle(ColorToken.ink)
             Button { Task { await viewModel.moveMonth(by: 1) } } label: {
                 Image(systemName: "chevron.right").frame(width: 44, height: 44)
                     .background(RoundedRectangle(cornerRadius: 22).fill(ColorToken.surface))
@@ -135,14 +135,13 @@ public struct CalendarView: View {
                 ZStack(alignment: .topTrailing) {
                     if let first = books.first {
                         CoverImageView(cover: first.cover, title: first.metadata.title, loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil })
-                            .frame(width: 26, height: 38)
-                            .clipShape(RoundedRectangle(cornerRadius: 2))
-                            .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white, lineWidth: 2))
-                            .rotationEffect(.degrees(Double((Int(first.metadata.title.utf8.first ?? 0) % 14) - 6)))
+                            .frame(width: 28, height: 40)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white, lineWidth: 1.5))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     if books.count > 1 {
-                        Text("+\(books.count - 1)")
+                        Text(verbatim: "+\(books.count - 1)")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5).padding(.vertical, 1)

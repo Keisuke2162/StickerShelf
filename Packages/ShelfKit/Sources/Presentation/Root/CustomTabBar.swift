@@ -42,6 +42,8 @@ struct CustomTabBar: View {
             .offset(y: -26)
         }
         .frame(height: 84)
+        // Safe Area 下部までタブバーと同じ色で埋めて継ぎ目をなくす。
+        .background(ColorToken.surface.ignoresSafeArea(edges: .bottom))
     }
 
     private func tabButton(title: String, icon: String, tab: Router.Tab) -> some View {
