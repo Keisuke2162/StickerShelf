@@ -136,27 +136,63 @@ public struct BookDetailSheet: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// 「本棚／積読」の 2 ボタン。本棚側の中で「読んでる／読んだ」はフォルダ選択で決まる仕様。
     private func statusSegment(draft: Binding<BookDetailDraft>) -> some View {
-        HStack(spacing: 4) {
-            ForEach([ReadingStatus.unread, .reading, .finished], id: \.self) { status in
-                Button {
-                    draft.wrappedValue.status = status
-                } label: {
-                    Text(statusLabel(status))
-                        .font(FontToken.sectionTitle())
-                        .foregroundStyle(draft.wrappedValue.status == status ? .white : ColorToken.inkSecondary)
-                        .frame(maxWidth: .infinity).frame(height: 40)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(draft.wrappedValue.status == status ? ColorToken.accent : .clear))
+        let isShelf = draft.wrappedValue.status != .unread
+        return HStack(spacing: 4) {
+            segmentButton(title: "本棚", isSelected: isShelf) {
+                if draft.wrappedValue.status == .unread {
+                    // 積読から本棚へ戻すときは「読んでる」を既定にする。
+                    draft.wrappedValue.status = .reading
+                    // boardID はピッカー描画時に shelf 側の既定へ寄せる（下記 onChange）。
+                    draft.wrappedValue.boardID = defaultBoardID(for: .reading)
                 }
-                .buttonStyle(.plain)
+            }
+            segmentButton(title: "積読", isSelected: !isShelf) {
+                if draft.wrappedValue.status != .unread {
+                    draft.wrappedValue.status = .unread
+                    draft.wrappedValue.boardID = defaultBoardID(for: .unread)
+                }
             }
         }
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.segmentTrack))
     }
 
-    private func statusLabel(_ status: ReadingStatus) -> String {
-        switch status { case .unread: return "積読"; case .reading: return "読んでる"; case .finished: return "読んだ" }
+    private func segmentButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(FontToken.sectionTitle())
+                .foregroundStyle(isSelected ? .white : ColorToken.inkSecondary)
+                .frame(maxWidth: .infinity).frame(height: 40)
+                .background(RoundedRectangle(cornerRadius: 10).fill(isSelected ? ColorToken.accent : .clear))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// セグメント切替時のフォルダ既定。「読んでる」「読んだ」など同名の shelf フォルダがあれば優先。
+    private func defaultBoardID(for status: ReadingStatus) -> BoardID? {
+        let kind: BoardKind = status == .unread ? .pile : .shelf
+        let candidates = viewModel.boards.filter { $0.kind == kind }
+        if status == .reading, let hit = candidates.first(where: { $0.name == "読んでる" }) { return hit.id }
+        if status == .finished, let hit = candidates.first(where: { $0.name == "読んだ" }) { return hit.id }
+        return candidates.first?.id
+    }
+
+    /// 本棚フォルダ選択時に、既定名ならステータスを連動して切り替える。
+    private func syncStatusWithShelfBoard(_ board: Board, draft: Binding<BookDetailDraft>) {
+        guard board.kind == .shelf else { return }
+        switch board.name {
+        case "読んでる":
+            draft.wrappedValue.status = .reading
+        case "読んだ":
+            draft.wrappedValue.status = .finished
+        default:
+            // カスタム本棚フォルダは status を変えない（現在 .reading / .finished のまま）。
+            if draft.wrappedValue.status == .unread {
+                draft.wrappedValue.status = .reading
+            }
+        }
     }
 
     private func dateGrid(draft: Binding<BookDetailDraft>) -> some View {
@@ -211,6 +247,7 @@ public struct BookDetailSheet: View {
                         ForEach(targets) { board in
                             Chip(title: board.name, isSelected: draft.wrappedValue.boardID == board.id) {
                                 draft.wrappedValue.boardID = board.id
+                                syncStatusWithShelfBoard(board, draft: draft)
                             }
                         }
                     }
