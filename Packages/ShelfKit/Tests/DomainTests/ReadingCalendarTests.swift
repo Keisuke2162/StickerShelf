@@ -37,13 +37,15 @@ struct ReadingCalendarTests {
         #expect(summary.booksByDay.count == 2)
     }
 
-    @Test func sameBookMultipleDays_countsPerDay() throws {
-        // 同じ本を複数日に「読んだ」記録 → 日毎にそれぞれ 1 件ずつ出現、月/年の冊数も重複カウント。
+    @Test func sameBookMultipleDays_dayGridKeepsAll_butCountIsUnique() throws {
+        // 同じ本を複数日に「読んだ」記録 → 日毎にそれぞれ 1 件ずつ出現、
+        // ただし monthCount / yearCount は unique 書籍数（この場合 1）。
         let d1 = calendar.date(from: DateComponents(year: 2026, month: 10, day: 3))!
         let d2 = calendar.date(from: DateComponents(year: 2026, month: 10, day: 7))!
         let book = try readingBook(title: "連日読書", readOn: [d1, d2])
         let summary = ReadingCalendar(calendar: calendar).summary(books: [book], year: 2026, month: 10)
-        #expect(summary.monthCount == 2)
+        #expect(summary.monthCount == 1)
+        #expect(summary.yearCount == 1)
         #expect(summary.booksByDay.count == 2)
         #expect(summary.booksByDay[calendar.startOfDay(for: d1)]?.count == 1)
         #expect(summary.booksByDay[calendar.startOfDay(for: d2)]?.count == 1)

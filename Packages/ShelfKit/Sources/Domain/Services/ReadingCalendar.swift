@@ -28,12 +28,13 @@ public struct ReadingCalendar: Sendable {
     }
 
     /// 指定年月の「読んだ日」集計。
-    /// 1 冊が同月内の複数日に記録されていれば複数日に出現し、月/年の冊数も重複カウントする
-    /// （カレンダー上で「その日に読んだ本の冊数」を表示する用途に合わせる）。
+    /// - `booksByDay`: カレンダー描画用の日毎の book リスト（複数日記録は該当日毎に出現）
+    /// - `monthCount`: その月に少なくとも 1 回「読んだ」記録のある unique 書籍数
+    /// - `yearCount`: その年に少なくとも 1 回「読んだ」記録のある unique 書籍数
     public func summary(books: [Book], year: Int, month: Int) -> MonthSummary {
         var grouped: [Date: [Book]] = [:]
-        var monthCount = 0
-        var yearCount = 0
+        var monthBooks: Set<BookID> = []
+        var yearBooks: Set<BookID> = []
 
         for book in books {
             for rawDate in book.readDays {
@@ -41,9 +42,9 @@ public struct ReadingCalendar: Sendable {
                 let comps = calendar.dateComponents([.year, .month], from: day)
                 guard let y = comps.year, let m = comps.month else { continue }
                 if y == year {
-                    yearCount += 1
+                    yearBooks.insert(book.id)
                     if m == month {
-                        monthCount += 1
+                        monthBooks.insert(book.id)
                         grouped[day, default: []].append(book)
                     }
                 }
@@ -54,6 +55,7 @@ public struct ReadingCalendar: Sendable {
             grouped[key]?.sort { $0.metadata.title < $1.metadata.title }
         }
 
-        return MonthSummary(year: year, month: month, booksByDay: grouped, monthCount: monthCount, yearCount: yearCount)
+        return MonthSummary(year: year, month: month, booksByDay: grouped,
+                            monthCount: monthBooks.count, yearCount: yearBooks.count)
     }
 }
