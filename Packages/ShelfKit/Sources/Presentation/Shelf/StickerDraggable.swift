@@ -62,9 +62,9 @@ struct StickerDraggable: View {
         }
         .position(x: center.x + dragTranslation.width, y: center.y + dragTranslation.height)
         .onTapGesture {
-            if isSelected {
-                viewModel.selectedStickerID = nil
-            } else {
+            // 選択中は何もしない。選択解除はボード空白タップで行う（selectedStickerID = nil）。
+            // 長押し成立直後にシステムが発火する暗黙のタップで選択を解除してしまうのを防ぐ意図もある。
+            if !isSelected {
                 router.detailBookID = book.id
             }
         }
