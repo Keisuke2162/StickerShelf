@@ -11,6 +11,7 @@ public struct AddBookView: View {
     @State private var showManualEntry = false
     @State private var showMemoList = false
     @Environment(ThemeStore.self) private var theme
+    @Environment(\.dismiss) private var dismiss
 
     public init(container: PresentationContainer, router: Router, initialKeyword: String = "") {
         self.container = container
@@ -27,9 +28,18 @@ public struct AddBookView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
-    /// 本棚/積読/カレンダーと同じ screenTitle のヘッダー。右端にメモ画面への遷移ボタン。
+    /// 本棚/積読/カレンダーと同じ screenTitle のヘッダー。左端に閉じる、右端にメモ画面への遷移ボタン。
     private var header: some View {
-        HStack {
+        HStack(spacing: 10) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(ColorToken.surface))
+                    .foregroundStyle(ColorToken.ink)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("閉じる")
+
             Text("本を追加")
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
@@ -106,6 +116,7 @@ public struct AddBookView: View {
                             // 追加完了したら対応するタブに遷移。タブ画面なので dismiss は不要。
                             router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
                             showManualEntry = false
+                            router.isAddingBook = false
                         }
                     }
                 }

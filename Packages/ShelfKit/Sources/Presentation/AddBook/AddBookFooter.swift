@@ -98,8 +98,9 @@ struct AddBookFooter: View {
         return Button {
             Task {
                 if await viewModel.addSelected() != nil {
-                    // タブ画面として動くので dismiss せず対応タブへ遷移。
+                    // 対応タブへ遷移し、モーダルを閉じる。
                     router.selectedTab = viewModel.destination == .pile ? .pile : .shelf
+                    router.isAddingBook = false
                 }
             }
         } label: {

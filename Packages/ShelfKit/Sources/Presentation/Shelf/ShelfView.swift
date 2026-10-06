@@ -70,6 +70,17 @@ public struct ShelfView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("表示切替")
+
+            Button {
+                router.isAddingBook = true
+            } label: {
+                Image(systemName: "plus")
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(ColorToken.actionBlue))
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("本を追加")
         }
     }
 
@@ -139,7 +150,7 @@ public struct ShelfView: View {
                     }
                 } else if viewModel.books.isEmpty && !viewModel.isLoading {
                     EmptyShelfPlaceholder {
-                        router.selectedTab = .book
+                        router.isAddingBook = true
                     }
                 }
 

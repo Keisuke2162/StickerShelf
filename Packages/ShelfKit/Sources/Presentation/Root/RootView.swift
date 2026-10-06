@@ -27,12 +27,6 @@ public struct RootView: View {
                 .tabItem { Label("積読", systemImage: "square.stack.3d.down.right") }
                 .tag(Router.Tab.pile)
 
-            NavigationStack {
-                AddBookView(container: container, router: router)
-            }
-            .tabItem { Label("本", systemImage: "book.closed") }
-            .tag(Router.Tab.book)
-
             CalendarView(container: container, router: router)
                 .tabItem { Label("カレンダー", systemImage: "calendar") }
                 .tag(Router.Tab.calendar)
@@ -56,6 +50,12 @@ public struct RootView: View {
             // sheet の content は親の環境値を自動継承しない組み合わせがあるため、ThemeStore を明示注入する。
             .environment(themeStore)
         }
+        .fullScreenCover(isPresented: $router.isAddingBook) {
+            NavigationStack {
+                AddBookView(container: container, router: router)
+            }
+            .environment(themeStore)
+        }
         .task {
             applyStartScreen()
         }
@@ -73,7 +73,7 @@ public struct RootView: View {
         case .settings:
             router.selectedTab = .settings
         case .add:
-            router.selectedTab = .book
+            router.isAddingBook = true
         case .detail:
             router.selectedTab = .shelf
             Task {
