@@ -23,7 +23,6 @@ public struct PileView: View {
         VStack(spacing: 12) {
             header
             folderChips
-            stats
             if viewModel.display == .pile {
                 pileBoard
             } else {
@@ -147,18 +146,14 @@ public struct PileView: View {
         }
     }
 
-    private var stats: some View {
-        statCard(title: viewModel.selectedBoardID == nil ? "積読（全体）" : "このフォルダ", value: "\(viewModel.books.count)冊")
-    }
-
-    private func statCard(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-            Text(value).font(FontToken.statNumber()).foregroundStyle(ColorToken.ink)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14).fill(ColorToken.surface))
+    /// ボード左上に小さく表示する冊数バッジ。
+    private var countBadge: some View {
+        Text(verbatim: "\(viewModel.books.count)冊")
+            .font(FontToken.caption().weight(.semibold))
+            .foregroundStyle(ColorToken.inkSecondary)
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background(Capsule().fill(ColorToken.surface.opacity(0.85)))
+            .padding(10)
     }
 
     private var pileBoard: some View {
@@ -192,6 +187,7 @@ public struct PileView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topLeading) { countBadge }
     }
 
     /// 現在選択中の積読フォルダ（nil = 「すべて」）。
@@ -236,6 +232,13 @@ public struct PileView: View {
     private var listView: some View {
         ScrollView {
             VStack(spacing: 8) {
+                HStack {
+                    Text(verbatim: "\(viewModel.books.count)冊")
+                        .font(FontToken.caption().weight(.semibold))
+                        .foregroundStyle(ColorToken.inkSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
                 ForEach(viewModel.books.sorted { viewModel.daysInPile(for: $0) > viewModel.daysInPile(for: $1) }) { book in
                     Button {
                         router.detailBookID = book.id
