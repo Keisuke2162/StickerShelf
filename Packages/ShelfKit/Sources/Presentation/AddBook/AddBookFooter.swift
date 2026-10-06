@@ -55,7 +55,7 @@ struct AddBookFooter: View {
                 .font(FontToken.sectionTitle())
                 .foregroundStyle(selected ? .white : ColorToken.inkSecondary)
                 .frame(maxWidth: .infinity).frame(height: 36)
-                .background(RoundedRectangle(cornerRadius: 8).fill(selected ? ColorToken.accent : .clear))
+                .background(RoundedRectangle(cornerRadius: 8).fill(selected ? ColorToken.actionBlue : .clear))
         }
         .buttonStyle(.plain)
     }
@@ -107,7 +107,7 @@ struct AddBookFooter: View {
                 .font(FontToken.sectionTitle())
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 56)
-                .background(RoundedRectangle(cornerRadius: 16).fill(ColorToken.accent))
+                .background(RoundedRectangle(cornerRadius: 16).fill(ColorToken.actionBlue))
         }
         .buttonStyle(.plain)
         .disabled(viewModel.selectedCatalog == nil || viewModel.isAdding)

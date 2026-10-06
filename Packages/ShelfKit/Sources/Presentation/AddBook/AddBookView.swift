@@ -132,7 +132,7 @@ public struct AddBookView: View {
                 Image(systemName: "barcode.viewfinder")
                     .foregroundStyle(.white)
                     .frame(width: 48, height: 48)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.ink))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.actionBlue))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("バーコード読み取り")
@@ -141,7 +141,7 @@ public struct AddBookView: View {
                 Image(systemName: "square.and.pencil")
                     .foregroundStyle(.white)
                     .frame(width: 48, height: 48)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.accent))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.actionBlue))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("手動で登録")

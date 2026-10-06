@@ -21,6 +21,10 @@ public enum ColorToken {
     public static let saturday = named("saturday")
     public static let tape = named("tape")
 
+    /// 本を追加フローの操作ボタン（バーコード・手動入力・追加ボタン）に使う淡い青。
+    /// 他 UI のアクセント (`accent`) とは別物として、Asset Catalog を増やさずコードで定義する。
+    public static let actionBlue = Color(red: 0.42, green: 0.60, blue: 0.84)
+
     private static func named(_ name: String) -> Color {
         Color(name, bundle: .module)
     }
