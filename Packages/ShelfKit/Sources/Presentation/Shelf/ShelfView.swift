@@ -29,6 +29,7 @@ public struct ShelfView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
+        .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ColorToken.boardBackground.ignoresSafeArea())
         .task { await viewModel.reload() }
