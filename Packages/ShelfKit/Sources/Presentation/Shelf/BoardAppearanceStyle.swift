@@ -74,7 +74,8 @@ struct BoardBackgroundView: View {
                     path.addLine(to: CGPoint(x: size.width, y: y))
                     y += spacing
                 }
-                context.stroke(path, with: .color(ink), lineWidth: 0.7)
+                // dots より線状の模様は目立ちやすいので薄めに描く。
+                context.stroke(path, with: .color(ink.opacity(0.45)), lineWidth: 0.5)
             }
         case .stripes:
             Canvas { context, size in
@@ -87,7 +88,7 @@ struct BoardBackgroundView: View {
                     path.addLine(to: CGPoint(x: offset + size.height, y: size.height))
                     offset += spacing
                 }
-                context.stroke(path, with: .color(ink), lineWidth: 0.8)
+                context.stroke(path, with: .color(ink.opacity(0.45)), lineWidth: 0.6)
             }
         }
     }
