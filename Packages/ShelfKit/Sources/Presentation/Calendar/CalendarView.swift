@@ -64,8 +64,8 @@ public struct CalendarView: View {
 
     private var stats: some View {
         HStack(spacing: 8) {
-            statCard(title: "今月 読了", value: "\(viewModel.summary?.monthCount ?? 0)冊")
-            statCard(title: "今年", value: "\(viewModel.summary?.yearCount ?? 0)冊")
+            statCard(title: "今月読んだ", value: "\(viewModel.summary?.monthCount ?? 0)冊")
+            statCard(title: "今年読んだ", value: "\(viewModel.summary?.yearCount ?? 0)冊")
         }
     }
 
@@ -109,7 +109,7 @@ public struct CalendarView: View {
                         if let date {
                             dayCell(date: date, col: col)
                         } else {
-                            Color.clear.frame(maxWidth: .infinity).frame(height: 84)
+                            Color.clear.frame(maxWidth: .infinity).frame(height: 68)
                         }
                     }
                 }
@@ -136,9 +136,9 @@ public struct CalendarView: View {
                 .padding(.top, 4)
                 if let first = books.first {
                     CoverImageView(cover: first.cover, title: first.metadata.title, loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil })
-                        .frame(width: 36, height: 52)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 1.5))
+                        .frame(width: 30, height: 42)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(.white, lineWidth: 1.5))
                         .shadow(color: ColorToken.ink.opacity(0.1), radius: 1, y: 1)
                 } else {
                     Spacer(minLength: 0)
@@ -146,7 +146,7 @@ public struct CalendarView: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 84)
+            .frame(height: 68)
             .background(RoundedRectangle(cornerRadius: 10).fill(ColorToken.surface))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(isSelected ? ColorToken.ink : .clear, lineWidth: 2))
         }
