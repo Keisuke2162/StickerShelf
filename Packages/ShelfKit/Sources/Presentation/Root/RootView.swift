@@ -53,6 +53,8 @@ public struct RootView: View {
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
+            // sheet の content は親の環境値を自動継承しない組み合わせがあるため、ThemeStore を明示注入する。
+            .environment(themeStore)
         }
         .task {
             applyStartScreen()
