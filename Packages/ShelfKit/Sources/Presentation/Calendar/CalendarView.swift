@@ -164,16 +164,18 @@ public struct CalendarView: View {
             f.dateFormat = "M月d日"
             return f
         }()
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 10) {
+            // タイトル行は本の有無に関わらず常に同じ位置に表示する。
             if let selectedDay {
                 Text(verbatim: "\(formatter.string(from: selectedDay))に読んだ本")
                     .font(FontToken.sectionTitle())
                     .foregroundStyle(ColorToken.ink)
             } else {
                 Text("日付を選ぶとその日の記録が表示されます")
-                    .font(FontToken.caption())
+                    .font(FontToken.sectionTitle())
                     .foregroundStyle(ColorToken.inkSecondary)
             }
+
             if books.isEmpty {
                 if selectedDay != nil {
                     Text("この日に記録された本はありません")
@@ -188,22 +190,14 @@ public struct CalendarView: View {
                             Button {
                                 router.detailBookID = book.id
                             } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    CoverImageView(
-                                        cover: book.cover,
-                                        title: book.metadata.title,
-                                        loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
-                                    )
-                                    .frame(width: 64, height: 92)
-                                    .clipShape(RoundedRectangle(cornerRadius: 5))
-                                    .shadow(color: ColorToken.ink.opacity(0.1), radius: 4, y: 2)
-                                    Text(book.metadata.title)
-                                        .font(FontToken.caption())
-                                        .foregroundStyle(ColorToken.ink)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.leading)
-                                        .frame(width: 64, alignment: .leading)
-                                }
+                                CoverImageView(
+                                    cover: book.cover,
+                                    title: book.metadata.title,
+                                    loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
+                                )
+                                .frame(width: 64, height: 92)
+                                .clipShape(RoundedRectangle(cornerRadius: 5))
+                                .shadow(color: ColorToken.ink.opacity(0.1), radius: 4, y: 2)
                             }
                             .buttonStyle(.plain)
                         }
