@@ -51,10 +51,12 @@ struct BoardBackgroundView: View {
         case .dots:
             Canvas { context, size in
                 let spacing: CGFloat = 18
+                // grid/stripes と同じく追加 opacity を掛けて薄めに描画。
+                let dotColor = ink.opacity(0.45)
                 for x in stride(from: spacing / 2, to: size.width, by: spacing) {
                     for y in stride(from: spacing / 2, to: size.height, by: spacing) {
-                        let rect = CGRect(x: x - 1.2, y: y - 1.2, width: 2.4, height: 2.4)
-                        context.fill(Path(ellipseIn: rect), with: .color(ink))
+                        let rect = CGRect(x: x - 1.0, y: y - 1.0, width: 2.0, height: 2.0)
+                        context.fill(Path(ellipseIn: rect), with: .color(dotColor))
                     }
                 }
             }
