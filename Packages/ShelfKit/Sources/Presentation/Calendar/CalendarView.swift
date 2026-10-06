@@ -161,27 +161,36 @@ public struct CalendarView: View {
             f.dateFormat = "M月d日"
             return f
         }()
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 10) {
             Text(verbatim: "\(formatter.string(from: day))に読んだ本")
                 .font(FontToken.sectionTitle()).foregroundStyle(ColorToken.ink)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 14) {
                     ForEach(books) { book in
                         Button {
                             router.detailBookID = book.id
                         } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                CoverImageView(cover: book.cover, title: book.metadata.title, loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil })
-                                    .frame(width: 30, height: 44)
-                                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                                Text(book.metadata.title).font(FontToken.caption()).foregroundStyle(ColorToken.ink).lineLimit(2)
-                                Text(book.metadata.authors.joined(separator: ", ")).font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary).lineLimit(1)
+                            VStack(alignment: .leading, spacing: 6) {
+                                CoverImageView(
+                                    cover: book.cover,
+                                    title: book.metadata.title,
+                                    loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
+                                )
+                                .frame(width: 92, height: 132)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .shadow(color: ColorToken.ink.opacity(0.12), radius: 6, y: 3)
+                                Text(book.metadata.title)
+                                    .font(FontToken.caption())
+                                    .foregroundStyle(ColorToken.ink)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(width: 92, alignment: .leading)
                             }
-                            .frame(width: 110, alignment: .leading)
                         }
                         .buttonStyle(.plain)
                     }
                 }
+                .padding(.vertical, 4)
             }
         }
     }
