@@ -32,6 +32,7 @@ public struct PileView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
+        .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(theme.backgroundColor.ignoresSafeArea())
         .task { await viewModel.reload() }
@@ -163,13 +164,9 @@ public struct PileView: View {
     private var pileBoard: some View {
         let appearance = currentBoard?.appearance ?? .default
         return ZStack(alignment: .top) {
-            // 背景は本棚ボードと同じ色/模様。床はその上に薄く描画して「床で止まる」感を残す。
+            // 背景は本棚ボードと同じ色/模様。物理シミュの床は PileDynamicsView 内の
+            // UICollisionBehavior が担当するので、ここに視覚的な床ラインは描かない。
             BoardBackgroundView(appearance: appearance)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(ColorToken.pileFloor)
-                        .frame(height: 4)
-                }
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .contentShape(RoundedRectangle(cornerRadius: 14))
                 .onLongPressGesture(minimumDuration: 0.4) {
