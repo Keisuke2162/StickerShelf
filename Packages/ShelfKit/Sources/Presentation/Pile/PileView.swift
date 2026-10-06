@@ -11,7 +11,9 @@ public struct PileView: View {
     @State private var showCreateFolder = false
     @State private var newFolderName = ""
     @State private var editingBoard: Board?
+    @State private var editingAllFolder: Bool = false
     @Environment(ThemeStore.self) private var theme
+    @Environment(PileAllFolderAppearanceStore.self) private var allFolderStore
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -43,6 +45,10 @@ public struct PileView: View {
         }
         .sheet(item: $editingBoard) { b in
             BoardEditorView(container: container, board: b)
+        }
+        .sheet(isPresented: $editingAllFolder) {
+            AllPileFolderEditorView(initial: allFolderStore.appearance)
+                .environment(allFolderStore)
         }
         .alert("新しいフォルダを作成", isPresented: $showCreateFolder) {
             TextField("フォルダ名（例: 漫画 / あとで読む）", text: $newFolderName)
@@ -130,9 +136,12 @@ public struct PileView: View {
                 .buttonStyle(.plain)
                 .frame(minHeight: 44)
                 .accessibilityLabel("フォルダを追加")
-                Chip(title: "すべて", isSelected: viewModel.selectedBoardID == nil) {
-                    viewModel.select(boardID: nil)
-                }
+                Chip(
+                    title: "すべて",
+                    isSelected: viewModel.selectedBoardID == nil,
+                    action: { viewModel.select(boardID: nil) },
+                    onLongPress: { editingAllFolder = true }
+                )
                 ForEach(viewModel.boards) { board in
                     Chip(
                         title: board.name,
@@ -157,7 +166,8 @@ public struct PileView: View {
     }
 
     private var pileBoard: some View {
-        let appearance = currentBoard?.appearance ?? .default
+        // 「すべて」のときは Store の appearance を使う。
+        let appearance = currentBoard?.appearance ?? allFolderStore.appearance
         return ZStack(alignment: .top) {
             // 背景は本棚ボードと同じ色/模様。物理シミュの床は PileDynamicsView 内の
             // UICollisionBehavior が担当するので、ここに視覚的な床ラインは描かない。
@@ -167,6 +177,8 @@ public struct PileView: View {
                 .onLongPressGesture(minimumDuration: 0.4) {
                     if let board = currentBoard {
                         editingBoard = board
+                    } else {
+                        editingAllFolder = true
                     }
                 }
 

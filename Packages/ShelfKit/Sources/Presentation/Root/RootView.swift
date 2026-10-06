@@ -7,6 +7,7 @@ public struct RootView: View {
     private let startupOptions: StartupOptions
     @State private var router = Router()
     @State private var themeStore: ThemeStore
+    @State private var pileAllFolderStore = PileAllFolderAppearanceStore()
 
     public init(container: PresentationContainer, startupOptions: StartupOptions = .init()) {
         self.container = container
@@ -36,6 +37,7 @@ public struct RootView: View {
                 .tag(Router.Tab.settings)
         }
         .environment(themeStore)
+        .environment(pileAllFolderStore)
         .sheet(item: Binding(
             get: { router.detailBookID.map(DetailBookWrapper.init(id:)) },
             set: { router.detailBookID = $0?.id }
@@ -47,14 +49,16 @@ public struct RootView: View {
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
-            // sheet の content は親の環境値を自動継承しない組み合わせがあるため、ThemeStore を明示注入する。
+            // sheet の content は親の環境値を自動継承しない組み合わせがあるため、明示注入する。
             .environment(themeStore)
+            .environment(pileAllFolderStore)
         }
         .fullScreenCover(isPresented: $router.isAddingBook) {
             NavigationStack {
                 AddBookView(container: container, router: router)
             }
             .environment(themeStore)
+            .environment(pileAllFolderStore)
         }
         .task {
             applyStartScreen()

@@ -55,6 +55,13 @@ struct PileDynamicsView: UIViewRepresentable {
                 onLayout(bounds.size)
             }
         }
+
+        // item (ItemView) に当たらない空白ではタッチを下層 (SwiftUI 側) に透過させる。
+        // こうしないと ContainerView 自身が長押しを食ってしまい、ボード本体長押しでの編集起動が効かない。
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            let hit = super.hitTest(point, with: event)
+            return hit === self ? nil : hit
+        }
     }
 
     // MARK: - Coordinator
