@@ -97,13 +97,12 @@ public struct ShelfView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(viewModel.boards) { board in
-                    Chip(title: board.name, isSelected: viewModel.selectedBoardID == board.id) {
-                        viewModel.select(boardID: board.id)
-                    }
-                    // 長押しでボード編集 sheet を開く。選択自体は短タップで行える。
-                    .onLongPressGesture(minimumDuration: 0.4) {
-                        editingBoard = board
-                    }
+                    Chip(
+                        title: board.name,
+                        isSelected: viewModel.selectedBoardID == board.id,
+                        action: { viewModel.select(boardID: board.id) },
+                        onLongPress: { editingBoard = board }
+                    )
                 }
                 Button {
                     showCreateBoard = true
