@@ -13,6 +13,27 @@ public struct RootView: View {
         self.container = container
         self.startupOptions = startupOptions
         self._themeStore = State(initialValue: ThemeStore(repository: container.themePreferences))
+        Self.configureTabBarAppearance()
+    }
+
+    /// タブバーの選択/非選択アイコン・ラベル色を控えめなコントラストに固定する。
+    /// SwiftUI の .tint だけでは「選択=その色、非選択=自動で薄め」になり、
+    /// パレットによっては選択/非選択どちらかが濃すぎたり薄すぎたりするため。
+    private static func configureTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        let selected = UIColor(white: 0.28, alpha: 1.0)
+        let unselected = UIColor(white: 0.70, alpha: 1.0)
+        let item = UITabBarItemAppearance()
+        item.normal.iconColor = unselected
+        item.normal.titleTextAttributes = [.foregroundColor: unselected]
+        item.selected.iconColor = selected
+        item.selected.titleTextAttributes = [.foregroundColor: selected]
+        appearance.stackedLayoutAppearance = item
+        appearance.inlineLayoutAppearance = item
+        appearance.compactInlineLayoutAppearance = item
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 
     public var body: some View {
@@ -36,8 +57,7 @@ public struct RootView: View {
                 .tabItem { Label("マイページ", systemImage: "person.circle") }
                 .tag(Router.Tab.settings)
         }
-        // タブバー選択/非選択の色を控えめに（淡いグレー寄り）。
-        .tint(Color.gray.opacity(0.6))
+        // 色は configureTabBarAppearance で UITabBarAppearance 経由に固定している。
         .environment(themeStore)
         .environment(pileAllFolderStore)
         .sheet(item: Binding(
