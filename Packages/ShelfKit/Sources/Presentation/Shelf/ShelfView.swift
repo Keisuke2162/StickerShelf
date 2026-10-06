@@ -130,11 +130,17 @@ public struct ShelfView: View {
                 BoardBackgroundView(appearance: appearance)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // 空白タップで選択解除するためのタップレイヤー（ステッカーの下）。
+                // 空白タップで選択解除。長押しで現在のボード編集画面を開く。
+                // ステッカー（上の層）に触れている場合はそちらの gesture が優先される。
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture {
                         viewModel.selectedStickerID = nil
+                    }
+                    .onLongPressGesture(minimumDuration: 0.4) {
+                        if let board = currentBoard {
+                            editingBoard = board
+                        }
                     }
 
                 if viewModel.boards.isEmpty && !viewModel.isLoading {
