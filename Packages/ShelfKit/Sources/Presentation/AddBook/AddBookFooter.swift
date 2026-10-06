@@ -11,6 +11,7 @@ struct AddBookFooter: View {
 
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
+    @Environment(ThemeStore.self) private var theme
 
     var body: some View {
         VStack(spacing: 10) {
@@ -20,7 +21,7 @@ struct AddBookFooter: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
-        .background(ColorToken.boardBackground)
+        .background(theme.backgroundColor)
         .alert(viewModel.destination == .shelf ? "新しい本棚を作成" : "新しい積読フォルダを作成", isPresented: $showCreateBoard) {
             TextField(viewModel.destination == .shelf ? "本棚の名前" : "フォルダ名", text: $newBoardName)
             Button("作成") {
