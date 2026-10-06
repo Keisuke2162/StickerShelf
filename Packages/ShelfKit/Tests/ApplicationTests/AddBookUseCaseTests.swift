@@ -41,6 +41,22 @@ struct AddBookUseCaseTests {
         }
     }
 
+    @Test func addsAsUnread_withPileFolder_assignsBoardID() async throws {
+        // 2026-10-06: 修正。積読追加時にも選択したフォルダ (boardID) が反映されることを確認。
+        let books = InMemoryBookRepository()
+        let useCase = AddBookUseCase(books: books)
+        let folder = BoardID()
+        let meta = try BookMetadata(title: "積読本")
+        let input = AddBookInput(source: .catalog(CatalogBook(metadata: meta)),
+                                 initialStatus: .unread,
+                                 boardID: folder,
+                                 purchasedAt: nil,
+                                 now: Date())
+        let book = try await useCase.execute(input)
+        #expect(book.status == .unread)
+        #expect(book.boardID == folder)
+    }
+
     @Test func manualEntryRequiresTitle() async throws {
         let books = InMemoryBookRepository()
         let useCase = AddBookUseCase(books: books)

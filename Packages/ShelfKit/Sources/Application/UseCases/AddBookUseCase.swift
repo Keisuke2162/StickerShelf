@@ -4,7 +4,8 @@ import Domain
 public struct AddBookInput: Sendable {
     public let source: Source
     public let initialStatus: ReadingStatus
-    /// 本棚に貼るときの所属ボード。`initialStatus == .unread` では無視される。
+    /// 所属フォルダ。本棚ステータス（.reading/.finished）では本棚側 Board、
+    /// 積読（.unread）では積読側フォルダに所属させる。nil のときは「未分類」。
     public let boardID: BoardID?
     public let purchasedAt: Date?
     public let now: Date
@@ -91,8 +92,9 @@ public struct AddBookUseCase: AddBookUseCaseProtocol {
             try book.changeStatus(to: input.initialStatus, on: input.now) {
                 placementFactory.make(existingZIndexes: existingZ)
             }
-            book.moveToBoard(input.boardID)
         }
+        // 本棚でも積読でも、選択されたフォルダに所属させる。
+        book.moveToBoard(input.boardID)
         try await books.save(book)
         return book
     }
