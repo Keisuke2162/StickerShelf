@@ -36,13 +36,17 @@ public actor SwiftDataBoardRepository: BoardRepository {
             existing.name = board.name
             existing.sortOrder = board.sortOrder
             existing.kindRaw = board.kind.rawValue
+            existing.appearanceColorRaw = board.appearance.color.rawValue
+            existing.appearancePatternRaw = board.appearance.pattern.rawValue
         } else {
             let record = BoardRecord(
                 id: board.id.rawValue,
                 name: board.name,
                 createdAt: board.createdAt,
                 sortOrder: board.sortOrder,
-                kindRaw: board.kind.rawValue
+                kindRaw: board.kind.rawValue,
+                appearanceColorRaw: board.appearance.color.rawValue,
+                appearancePatternRaw: board.appearance.pattern.rawValue
             )
             modelContext.insert(record)
         }
@@ -66,6 +70,17 @@ public actor SwiftDataBoardRepository: BoardRepository {
 
     private func mapToDomain(_ record: BoardRecord) -> Board {
         let kind = BoardKind(rawValue: record.kindRaw) ?? .shelf
-        return Board.reconstruct(id: BoardID(record.id), kind: kind, name: record.name, createdAt: record.createdAt, sortOrder: record.sortOrder)
+        let appearance = BoardAppearance(
+            color: BoardColor(rawValue: record.appearanceColorRaw) ?? .cream,
+            pattern: BoardPattern(rawValue: record.appearancePatternRaw) ?? .dots
+        )
+        return Board.reconstruct(
+            id: BoardID(record.id),
+            kind: kind,
+            name: record.name,
+            createdAt: record.createdAt,
+            sortOrder: record.sortOrder,
+            appearance: appearance
+        )
     }
 }

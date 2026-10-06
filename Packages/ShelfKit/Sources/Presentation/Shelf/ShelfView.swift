@@ -9,6 +9,7 @@ public struct ShelfView: View {
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
     @State private var showDeleteBoardConfirm = false
+    @State private var editingBoard: Board?
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -46,6 +47,9 @@ public struct ShelfView: View {
                 }
             }
             Button("キャンセル", role: .cancel) { newBoardName = "" }
+        }
+        .sheet(item: $editingBoard) { b in
+            BoardEditorView(container: container, board: b)
         }
         .alert("この本棚を削除しますか？", isPresented: $showDeleteBoardConfirm) {
             Button("削除", role: .destructive) {
@@ -96,6 +100,10 @@ public struct ShelfView: View {
                     Chip(title: board.name, isSelected: viewModel.selectedBoardID == board.id) {
                         viewModel.select(boardID: board.id)
                     }
+                    // 長押しでボード編集 sheet を開く。選択自体は短タップで行える。
+                    .onLongPressGesture(minimumDuration: 0.4) {
+                        editingBoard = board
+                    }
                 }
                 Button {
                     showCreateBoard = true
@@ -116,9 +124,10 @@ public struct ShelfView: View {
     }
 
     private var board: some View {
-        GeometryReader { geo in
+        let appearance = currentBoard?.appearance ?? .default
+        return GeometryReader { geo in
             ZStack {
-                DotGridBackground()
+                BoardBackgroundView(appearance: appearance)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // 空白タップで選択解除するためのタップレイヤー（ステッカーの下）。
@@ -164,8 +173,15 @@ public struct ShelfView: View {
                 }
             }
             .coordinateSpace(name: "stickerBoard")
-            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
+            .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
         }
+    }
+
+    /// 現在選択中のボード（表示用）。
+    private var currentBoard: Board? {
+        viewModel.boards.first { $0.id == viewModel.selectedBoardID }
     }
 
     private var listView: some View {
@@ -217,22 +233,6 @@ public struct ShelfView: View {
             }
             .padding(.vertical, 4)
         }
-    }
-}
-
-private struct DotGridBackground: View {
-    var body: some View {
-        Canvas { context, size in
-            let spacing: CGFloat = 18
-            let dotColor = Color(ColorToken.boardDot)
-            for x in stride(from: spacing / 2, to: size.width, by: spacing) {
-                for y in stride(from: spacing / 2, to: size.height, by: spacing) {
-                    let rect = CGRect(x: x - 1.2, y: y - 1.2, width: 2.4, height: 2.4)
-                    context.fill(Path(ellipseIn: rect), with: .color(dotColor))
-                }
-            }
-        }
-        .allowsHitTesting(false)
     }
 }
 

@@ -7,8 +7,14 @@ public struct Board: Identifiable, Equatable, Sendable {
     public private(set) var name: String
     public let createdAt: Date
     public let sortOrder: Int
+    public private(set) var appearance: BoardAppearance
 
-    public init(id: BoardID = BoardID(), kind: BoardKind = .shelf, name: String, createdAt: Date, sortOrder: Int) throws {
+    public init(id: BoardID = BoardID(),
+                kind: BoardKind = .shelf,
+                name: String,
+                createdAt: Date,
+                sortOrder: Int,
+                appearance: BoardAppearance = .default) throws {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw DomainError.invalidBoardName }
         self.id = id
@@ -16,23 +22,39 @@ public struct Board: Identifiable, Equatable, Sendable {
         self.name = trimmed
         self.createdAt = createdAt
         self.sortOrder = sortOrder
+        self.appearance = appearance
     }
 
-    public static func reconstruct(id: BoardID, kind: BoardKind = .shelf, name: String, createdAt: Date, sortOrder: Int) -> Board {
-        Board(reconstructing: id, kind: kind, name: name, createdAt: createdAt, sortOrder: sortOrder)
+    public static func reconstruct(id: BoardID,
+                                   kind: BoardKind = .shelf,
+                                   name: String,
+                                   createdAt: Date,
+                                   sortOrder: Int,
+                                   appearance: BoardAppearance = .default) -> Board {
+        Board(reconstructing: id, kind: kind, name: name, createdAt: createdAt, sortOrder: sortOrder, appearance: appearance)
     }
 
-    private init(reconstructing id: BoardID, kind: BoardKind, name: String, createdAt: Date, sortOrder: Int) {
+    private init(reconstructing id: BoardID,
+                 kind: BoardKind,
+                 name: String,
+                 createdAt: Date,
+                 sortOrder: Int,
+                 appearance: BoardAppearance) {
         self.id = id
         self.kind = kind
         self.name = name
         self.createdAt = createdAt
         self.sortOrder = sortOrder
+        self.appearance = appearance
     }
 
     public mutating func rename(_ newName: String) throws {
         let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw DomainError.invalidBoardName }
         self.name = trimmed
+    }
+
+    public mutating func updateAppearance(_ appearance: BoardAppearance) {
+        self.appearance = appearance
     }
 }

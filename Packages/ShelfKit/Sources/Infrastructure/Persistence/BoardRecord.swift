@@ -3,8 +3,8 @@ import SwiftData
 
 /// ユーザー定義のフォルダ（本棚ボード または 積読フォルダ）。
 ///
-/// `kindRaw` のデフォルトは "shelf"。既存ストア（kind カラム未保有）からマイグレートした場合は
-/// 全レコードが .shelf として解釈される。
+/// `kindRaw` のデフォルトは "shelf"、`appearanceColorRaw` / `appearancePatternRaw` のデフォルトは
+/// 既定の「クリーム / ドット」。既存ストアからマイグレートしても自然な既定値になる。
 @Model
 public final class BoardRecord {
     @Attribute(.unique) public var id: UUID = UUID()
@@ -12,12 +12,22 @@ public final class BoardRecord {
     public var createdAt: Date = Date(timeIntervalSince1970: 0)
     public var sortOrder: Int = 0
     public var kindRaw: String = "shelf"
+    public var appearanceColorRaw: String = "cream"
+    public var appearancePatternRaw: String = "dots"
 
-    public init(id: UUID, name: String, createdAt: Date, sortOrder: Int, kindRaw: String = "shelf") {
+    public init(id: UUID,
+                name: String,
+                createdAt: Date,
+                sortOrder: Int,
+                kindRaw: String = "shelf",
+                appearanceColorRaw: String = "cream",
+                appearancePatternRaw: String = "dots") {
         self.id = id
         self.name = name
         self.createdAt = createdAt
         self.sortOrder = sortOrder
         self.kindRaw = kindRaw
+        self.appearanceColorRaw = appearanceColorRaw
+        self.appearancePatternRaw = appearancePatternRaw
     }
 }

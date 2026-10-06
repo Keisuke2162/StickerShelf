@@ -25,6 +25,7 @@ public struct PresentationContainer: Sendable {
     public let testConnection: any TestCatalogConnectionUseCaseProtocol
     public let fetchBoards: any FetchBoardsUseCaseProtocol
     public let createBoard: any CreateBoardUseCaseProtocol
+    public let updateBoard: any UpdateBoardUseCaseProtocol
     public let deleteBoard: any DeleteBoardUseCaseProtocol
     public let moveBookToBoard: any MoveBookToBoardUseCaseProtocol
     public let markAsRead: any MarkAsReadUseCaseProtocol
@@ -58,6 +59,7 @@ public struct PresentationContainer: Sendable {
         testConnection: any TestCatalogConnectionUseCaseProtocol,
         fetchBoards: any FetchBoardsUseCaseProtocol,
         createBoard: any CreateBoardUseCaseProtocol,
+        updateBoard: any UpdateBoardUseCaseProtocol,
         deleteBoard: any DeleteBoardUseCaseProtocol,
         moveBookToBoard: any MoveBookToBoardUseCaseProtocol,
         markAsRead: any MarkAsReadUseCaseProtocol,
@@ -90,6 +92,7 @@ public struct PresentationContainer: Sendable {
         self.testConnection = testConnection
         self.fetchBoards = fetchBoards
         self.createBoard = createBoard
+        self.updateBoard = updateBoard
         self.deleteBoard = deleteBoard
         self.moveBookToBoard = moveBookToBoard
         self.markAsRead = markAsRead

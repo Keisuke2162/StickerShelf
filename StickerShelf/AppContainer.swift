@@ -76,6 +76,7 @@ public struct AppContainer: Sendable {
             testConnection: TestCatalogConnectionUseCase(catalog: catalog),
             fetchBoards: FetchBoardsUseCase(boards: boardRepository),
             createBoard: CreateBoardUseCase(boards: boardRepository),
+            updateBoard: UpdateBoardUseCase(boards: boardRepository),
             deleteBoard: DeleteBoardUseCase(boards: boardRepository, books: bookRepository),
             moveBookToBoard: MoveBookToBoardUseCase(books: bookRepository),
             markAsRead: MarkAsReadUseCase(books: bookRepository),

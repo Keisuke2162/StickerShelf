@@ -40,6 +40,7 @@ public enum PreviewSupport {
             testConnection: TestCatalogConnectionUseCase(catalog: catalog),
             fetchBoards: FetchBoardsUseCase(boards: boardRepo),
             createBoard: CreateBoardUseCase(boards: boardRepo),
+            updateBoard: UpdateBoardUseCase(boards: boardRepo),
             deleteBoard: DeleteBoardUseCase(boards: boardRepo, books: repository),
             moveBookToBoard: MoveBookToBoardUseCase(books: repository),
             markAsRead: MarkAsReadUseCase(books: repository),
