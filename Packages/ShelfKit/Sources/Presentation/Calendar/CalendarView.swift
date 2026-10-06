@@ -109,7 +109,7 @@ public struct CalendarView: View {
                         if let date {
                             dayCell(date: date, col: col)
                         } else {
-                            Color.clear.frame(maxWidth: .infinity).frame(height: 70)
+                            Color.clear.frame(maxWidth: .infinity).frame(height: 84)
                         }
                     }
                 }
@@ -125,35 +125,28 @@ public struct CalendarView: View {
         return Button {
             viewModel.selectedDay = date
         } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("\(dayNum)")
-                    .font(FontToken.caption().weight(.bold))
-                    .foregroundStyle(weekdayColor(index: col))
-                    .padding(.leading, 6)
-                    .padding(.top, 4)
-                Spacer(minLength: 0)
-                ZStack(alignment: .topTrailing) {
-                    if let first = books.first {
-                        CoverImageView(cover: first.cover, title: first.metadata.title, loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil })
-                            .frame(width: 28, height: 40)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white, lineWidth: 1.5))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    if books.count > 1 {
-                        Text(verbatim: "+\(books.count - 1)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Capsule().fill(ColorToken.accent))
-                            .offset(x: 2, y: -2)
-                    }
+            VStack(spacing: 2) {
+                HStack {
+                    Text("\(dayNum)")
+                        .font(FontToken.caption().weight(.bold))
+                        .foregroundStyle(weekdayColor(index: col))
+                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 6)
-                .padding(.bottom, 4)
+                .padding(.leading, 6)
+                .padding(.top, 4)
+                if let first = books.first {
+                    CoverImageView(cover: first.cover, title: first.metadata.title, loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil })
+                        .frame(width: 36, height: 52)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 1.5))
+                        .shadow(color: ColorToken.ink.opacity(0.1), radius: 1, y: 1)
+                } else {
+                    Spacer(minLength: 0)
+                }
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 70)
+            .frame(height: 84)
             .background(RoundedRectangle(cornerRadius: 10).fill(ColorToken.surface))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(isSelected ? ColorToken.ink : .clear, lineWidth: 2))
         }
