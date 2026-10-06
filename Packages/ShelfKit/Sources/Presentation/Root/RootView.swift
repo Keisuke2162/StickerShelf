@@ -36,8 +36,8 @@ public struct RootView: View {
                 .tabItem { Label("マイページ", systemImage: "person.circle") }
                 .tag(Router.Tab.settings)
         }
-        // タブバー選択/非選択の色を控えめに。
-        .tint(ColorToken.ink.opacity(0.65))
+        // タブバー選択/非選択の色を控えめに（淡いグレー寄り）。
+        .tint(Color.gray.opacity(0.6))
         .environment(themeStore)
         .environment(pileAllFolderStore)
         .sheet(item: Binding(
