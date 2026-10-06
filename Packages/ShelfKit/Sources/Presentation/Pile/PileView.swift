@@ -11,6 +11,7 @@ public struct PileView: View {
     @State private var showCreateFolder = false
     @State private var newFolderName = ""
     @State private var showDeleteFolderConfirm = false
+    @State private var editingBoard: Board?
     @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router) {
@@ -40,6 +41,9 @@ public struct PileView: View {
         }
         .task(id: viewModel.books) {
             await refreshItems()
+        }
+        .sheet(item: $editingBoard) { b in
+            BoardEditorView(container: container, board: b)
         }
         .alert("新しいフォルダを作成", isPresented: $showCreateFolder) {
             TextField("フォルダ名（例: 漫画 / あとで読む）", text: $newFolderName)
@@ -126,9 +130,12 @@ public struct PileView: View {
                     viewModel.select(boardID: nil)
                 }
                 ForEach(viewModel.boards) { board in
-                    Chip(title: board.name, isSelected: viewModel.selectedBoardID == board.id) {
-                        viewModel.select(boardID: board.id)
-                    }
+                    Chip(
+                        title: board.name,
+                        isSelected: viewModel.selectedBoardID == board.id,
+                        action: { viewModel.select(boardID: board.id) },
+                        onLongPress: { editingBoard = board }
+                    )
                 }
                 Button {
                     showCreateFolder = true
@@ -163,9 +170,22 @@ public struct PileView: View {
     }
 
     private var pileBoard: some View {
-        ZStack(alignment: .top) {
-            PileBackground()
+        let appearance = currentBoard?.appearance ?? .default
+        return ZStack(alignment: .top) {
+            // 背景は本棚ボードと同じ色/模様。床はその上に薄く描画して「床で止まる」感を残す。
+            BoardBackgroundView(appearance: appearance)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(ColorToken.pileFloor)
+                        .frame(height: 4)
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .contentShape(RoundedRectangle(cornerRadius: 14))
+                .onLongPressGesture(minimumDuration: 0.4) {
+                    if let board = currentBoard {
+                        editingBoard = board
+                    }
+                }
 
             PileDynamicsView(
                 items: pileItems,
@@ -184,6 +204,12 @@ public struct PileView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// 現在選択中の積読フォルダ（nil = 「すべて」）。
+    private var currentBoard: Board? {
+        guard let id = viewModel.selectedBoardID else { return nil }
+        return viewModel.boards.first { $0.id == id }
     }
 
     private func refreshItems() async {
@@ -268,33 +294,6 @@ public struct PileView: View {
                 }
             }
         }
-    }
-}
-
-/// 積読ボードの背景：pileBackground 地 + 26pt 間隔の方眼 + 床 4pt
-private struct PileBackground: View {
-    var body: some View {
-        Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(ColorToken.pileBackground)))
-            let grid = Color(ColorToken.pileGrid)
-            var path = Path()
-            var x: CGFloat = 0
-            while x < size.width {
-                path.move(to: CGPoint(x: x, y: 0))
-                path.addLine(to: CGPoint(x: x, y: size.height))
-                x += 26
-            }
-            var y: CGFloat = 0
-            while y < size.height {
-                path.move(to: CGPoint(x: 0, y: y))
-                path.addLine(to: CGPoint(x: size.width, y: y))
-                y += 26
-            }
-            context.stroke(path, with: .color(grid), lineWidth: 1)
-            let floorRect = CGRect(x: 0, y: size.height - 4, width: size.width, height: 4)
-            context.fill(Path(floorRect), with: .color(Color(ColorToken.pileFloor)))
-        }
-        .allowsHitTesting(false)
     }
 }
 
