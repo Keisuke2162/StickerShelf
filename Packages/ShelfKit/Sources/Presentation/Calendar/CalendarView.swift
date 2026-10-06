@@ -20,13 +20,14 @@ public struct CalendarView: View {
             stats
             weekdayHeader
             daysGrid
-            if let day = viewModel.selectedDay {
-                dayDetail(day: day)
-            }
-            Spacer(minLength: 0)
+            // dayDetail は常に固定高さで下部に居座らせ、選択日や本の有無で上の要素を動かさない。
+            dayDetail
+                .frame(maxWidth: .infinity, alignment: .top)
+                .frame(height: 150)
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
+        .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(theme.backgroundColor.ignoresSafeArea())
         .task { await viewModel.reload() }
@@ -154,43 +155,61 @@ public struct CalendarView: View {
         .buttonStyle(.plain)
     }
 
-    private func dayDetail(day: Date) -> some View {
-        let books = viewModel.books(for: day)
+    /// カレンダーと下タブの間に居座る固定枠。選択日や本の有無でレイアウトが動かないよう高さを固定している。
+    private var dayDetail: some View {
+        let selectedDay = viewModel.selectedDay
+        let books = selectedDay.map { viewModel.books(for: $0) } ?? []
         let formatter: DateFormatter = {
             let f = DateFormatter()
             f.dateFormat = "M月d日"
             return f
         }()
-        return VStack(alignment: .leading, spacing: 10) {
-            Text(verbatim: "\(formatter.string(from: day))に読んだ本")
-                .font(FontToken.sectionTitle()).foregroundStyle(ColorToken.ink)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 14) {
-                    ForEach(books) { book in
-                        Button {
-                            router.detailBookID = book.id
-                        } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                CoverImageView(
-                                    cover: book.cover,
-                                    title: book.metadata.title,
-                                    loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
-                                )
-                                .frame(width: 92, height: 132)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .shadow(color: ColorToken.ink.opacity(0.12), radius: 6, y: 3)
-                                Text(book.metadata.title)
-                                    .font(FontToken.caption())
-                                    .foregroundStyle(ColorToken.ink)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(width: 92, alignment: .leading)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
+        return VStack(alignment: .leading, spacing: 8) {
+            if let selectedDay {
+                Text(verbatim: "\(formatter.string(from: selectedDay))に読んだ本")
+                    .font(FontToken.sectionTitle())
+                    .foregroundStyle(ColorToken.ink)
+            } else {
+                Text("日付を選ぶとその日の記録が表示されます")
+                    .font(FontToken.caption())
+                    .foregroundStyle(ColorToken.inkSecondary)
+            }
+            if books.isEmpty {
+                if selectedDay != nil {
+                    Text("この日に記録された本はありません")
+                        .font(FontToken.caption())
+                        .foregroundStyle(ColorToken.inkTertiary)
                 }
-                .padding(.vertical, 4)
+                Spacer(minLength: 0)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(books) { book in
+                            Button {
+                                router.detailBookID = book.id
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    CoverImageView(
+                                        cover: book.cover,
+                                        title: book.metadata.title,
+                                        loader: { cover in (try? await container.coverImages.imageData(for: cover)) ?? nil }
+                                    )
+                                    .frame(width: 64, height: 92)
+                                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                                    .shadow(color: ColorToken.ink.opacity(0.1), radius: 4, y: 2)
+                                    Text(book.metadata.title)
+                                        .font(FontToken.caption())
+                                        .foregroundStyle(ColorToken.ink)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(width: 64, alignment: .leading)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
             }
         }
     }
