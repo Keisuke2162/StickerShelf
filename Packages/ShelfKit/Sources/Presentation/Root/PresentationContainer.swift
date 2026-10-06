@@ -34,6 +34,7 @@ public struct PresentationContainer: Sendable {
     public let fetchMemos: any FetchMemosUseCaseProtocol
     public let deleteMemo: any DeleteMemoUseCaseProtocol
     public let searchPreferences: any SearchPreferenceRepository
+    public let themePreferences: any ThemePreferenceRepository
     public let coverImages: any CoverImageRepository
     public let bookChanges: @Sendable () -> AsyncStream<Void>
     public let boardChanges: @Sendable () -> AsyncStream<Void>
@@ -68,6 +69,7 @@ public struct PresentationContainer: Sendable {
         fetchMemos: any FetchMemosUseCaseProtocol,
         deleteMemo: any DeleteMemoUseCaseProtocol,
         searchPreferences: any SearchPreferenceRepository,
+        themePreferences: any ThemePreferenceRepository,
         coverImages: any CoverImageRepository,
         bookChanges: @escaping @Sendable () -> AsyncStream<Void>,
         boardChanges: @escaping @Sendable () -> AsyncStream<Void>,
@@ -101,6 +103,7 @@ public struct PresentationContainer: Sendable {
         self.fetchMemos = fetchMemos
         self.deleteMemo = deleteMemo
         self.searchPreferences = searchPreferences
+        self.themePreferences = themePreferences
         self.coverImages = coverImages
         self.bookChanges = bookChanges
         self.boardChanges = boardChanges

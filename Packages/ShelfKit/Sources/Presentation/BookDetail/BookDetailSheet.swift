@@ -13,6 +13,7 @@ public struct BookDetailSheet: View {
     @State private var showDocumentScanner = false
     @State private var readDate: Date = Date()
     @Environment(\.dismiss) private var dismiss
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, bookID: BookID, router: Router) {
         self.container = container
@@ -51,7 +52,7 @@ public struct BookDetailSheet: View {
             .padding(.top, 12)
             .padding(.bottom, 12)
         }
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

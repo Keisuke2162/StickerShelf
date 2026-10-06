@@ -11,6 +11,7 @@ public struct BookPreviewAddView: View {
     private let catalog: CatalogBook
     private let alreadyRegistered: Bool
     @State private var viewModel: AddBookViewModel
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router, catalog: CatalogBook, alreadyRegistered: Bool = false) {
         self.container = container
@@ -35,7 +36,7 @@ public struct BookPreviewAddView: View {
                 .padding(.bottom, 12)
             }
         }
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom) {
             AddBookFooter(viewModel: viewModel, router: router)

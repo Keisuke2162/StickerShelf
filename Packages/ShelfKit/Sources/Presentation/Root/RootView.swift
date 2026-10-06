@@ -6,10 +6,12 @@ public struct RootView: View {
     private let container: PresentationContainer
     private let startupOptions: StartupOptions
     @State private var router = Router()
+    @State private var themeStore: ThemeStore
 
     public init(container: PresentationContainer, startupOptions: StartupOptions = .init()) {
         self.container = container
         self.startupOptions = startupOptions
+        self._themeStore = State(initialValue: ThemeStore(repository: container.themePreferences))
     }
 
     public var body: some View {
@@ -39,6 +41,7 @@ public struct RootView: View {
                 .tabItem { Label("マイページ", systemImage: "person.circle") }
                 .tag(Router.Tab.settings)
         }
+        .environment(themeStore)
         .sheet(item: Binding(
             get: { router.detailBookID.map(DetailBookWrapper.init(id:)) },
             set: { router.detailBookID = $0?.id }

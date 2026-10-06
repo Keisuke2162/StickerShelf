@@ -10,6 +10,7 @@ public struct AddBookView: View {
     @State private var showScanner = false
     @State private var showManualEntry = false
     @State private var showMemoList = false
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router, initialKeyword: String = "") {
         self.container = container
@@ -22,7 +23,7 @@ public struct AddBookView: View {
             header
             contentBody
         }
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
     }
 

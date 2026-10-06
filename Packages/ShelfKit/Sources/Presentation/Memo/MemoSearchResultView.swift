@@ -10,6 +10,7 @@ public struct MemoSearchResultView: View {
     private let router: Router
     private let keyword: String
     @State private var viewModel: AddBookViewModel
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router, keyword: String) {
         self.container = container
@@ -24,7 +25,7 @@ public struct MemoSearchResultView: View {
             content
             Spacer(minLength: 0)
         }
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
         .task {

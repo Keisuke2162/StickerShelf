@@ -34,6 +34,7 @@ public struct AppContainer: Sendable {
         let fallback = InfoPlistAPIKeyProvider()
         let apiKeyRepository = KeychainAPIKeyRepository(service: bundleID, fallback: { fallback.load() })
         let searchPreferences = UserDefaultsSearchPreferenceRepository()
+        let themePreferences = UserDefaultsThemePreferenceRepository()
 
         let catalog: any BookCatalogRepository
         if options.useStubCatalog {
@@ -85,6 +86,7 @@ public struct AppContainer: Sendable {
             fetchMemos: FetchMemosUseCase(memos: memoRepository),
             deleteMemo: DeleteMemoUseCase(memos: memoRepository),
             searchPreferences: searchPreferences,
+            themePreferences: themePreferences,
             coverImages: covers,
             bookChanges: { bookRepository.changes() },
             boardChanges: { boardRepository.changes() },

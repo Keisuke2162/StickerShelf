@@ -11,6 +11,7 @@ public struct PileView: View {
     @State private var showCreateFolder = false
     @State private var newFolderName = ""
     @State private var showDeleteFolderConfirm = false
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -32,7 +33,7 @@ public struct PileView: View {
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(ColorToken.pileBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .task { await viewModel.reload() }
         .task(id: router.selectedTab) {
             if router.selectedTab == .pile { await viewModel.start() }

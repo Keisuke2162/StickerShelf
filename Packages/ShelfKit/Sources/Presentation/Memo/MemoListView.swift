@@ -9,6 +9,7 @@ public struct MemoListView: View {
     private let router: Router
     @State private var viewModel: MemoListViewModel
     @FocusState private var inputFocused: Bool
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -21,7 +22,7 @@ public struct MemoListView: View {
             inputBar
             memosList
         }
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .navigationTitle("気になる本メモ")
         .navigationBarTitleDisplayMode(.inline)
         // 画面の空白部分 or リストタップ時にキーボードを閉じる。

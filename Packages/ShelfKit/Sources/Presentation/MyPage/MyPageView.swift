@@ -7,6 +7,7 @@ import Application
 public struct MyPageView: View {
     private let container: PresentationContainer
     @State private var viewModel: SettingsViewModel
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer) {
         self.container = container
@@ -19,7 +20,7 @@ public struct MyPageView: View {
                 header
                 settingsForm
             }
-            .background(ColorToken.boardBackground.ignoresSafeArea())
+            .background(theme.backgroundColor.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .task { await viewModel.reload() }
         }
@@ -41,6 +42,10 @@ public struct MyPageView: View {
         Form {
                 Section {
                     userInfoRow
+                }
+
+                Section("テーマカラー") {
+                    themeColorPicker
                 }
 
                 Section("書籍検索API") {
@@ -101,6 +106,33 @@ public struct MyPageView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+    }
+
+    /// アプリ全体の背景色を選ぶカラースウォッチ。
+    private var themeColorPicker: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+            ForEach(BoardColor.allCases, id: \.self) { c in
+                Button {
+                    theme.set(c)
+                } label: {
+                    VStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(BoardAppearanceStyle.background(c))
+                            .frame(height: 44)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(theme.color == c ? ColorToken.accent : ColorToken.hairline,
+                                            lineWidth: theme.color == c ? 3 : 1)
+                            )
+                        Text(c.displayName)
+                            .font(FontToken.caption())
+                            .foregroundStyle(ColorToken.ink)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     /// 仮のユーザー情報。将来 Account 機能が入ったら差し替える。

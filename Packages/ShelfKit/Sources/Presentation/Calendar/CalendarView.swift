@@ -6,6 +6,7 @@ public struct CalendarView: View {
     private let container: PresentationContainer
     private let router: Router
     @State private var viewModel: CalendarViewModel
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -27,7 +28,7 @@ public struct CalendarView: View {
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .task { await viewModel.reload() }
         .task(id: router.selectedTab) {
             if router.selectedTab == .calendar { await viewModel.start() }

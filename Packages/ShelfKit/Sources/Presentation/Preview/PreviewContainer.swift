@@ -20,6 +20,7 @@ public enum PreviewSupport {
         let apiKeys = PreviewAPIKeyRepository()
         let covers = PreviewCoverImageRepository()
         let prefs = PreviewSearchPreferences()
+        let themePrefs = PreviewThemePreferences()
         return PresentationContainer(
             searchCatalog: SearchCatalogUseCase(catalog: catalog, books: repository),
             findCatalogByISBN: FindCatalogBookByISBNUseCase(catalog: catalog),
@@ -49,6 +50,7 @@ public enum PreviewSupport {
             fetchMemos: FetchMemosUseCase(memos: memoRepo),
             deleteMemo: DeleteMemoUseCase(memos: memoRepo),
             searchPreferences: prefs,
+            themePreferences: themePrefs,
             coverImages: covers,
             bookChanges: { repository.changes() },
             boardChanges: { boardRepo.changes() },
@@ -240,6 +242,12 @@ final class PreviewSearchPreferences: SearchPreferenceRepository, @unchecked Sen
     private var value = true
     func restrictToJapanese() -> Bool { value }
     func setRestrictToJapanese(_ newValue: Bool) { value = newValue }
+}
+
+final class PreviewThemePreferences: ThemePreferenceRepository, @unchecked Sendable {
+    private var value: BoardColor = .cream
+    func themeColor() -> BoardColor { value }
+    func setThemeColor(_ newValue: BoardColor) { value = newValue }
 }
 
 #Preview("RootView") {

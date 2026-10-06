@@ -10,6 +10,7 @@ public struct ShelfView: View {
     @State private var newBoardName = ""
     @State private var showDeleteBoardConfirm = false
     @State private var editingBoard: Board?
+    @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -31,7 +32,7 @@ public struct ShelfView: View {
         .padding(.top, 16)
         .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(ColorToken.boardBackground.ignoresSafeArea())
+        .background(theme.backgroundColor.ignoresSafeArea())
         .task { await viewModel.reload() }
         .task(id: router.selectedTab) {
             if router.selectedTab == .shelf { await viewModel.start() }
