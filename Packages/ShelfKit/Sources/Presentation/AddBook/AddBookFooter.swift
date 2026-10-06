@@ -94,7 +94,7 @@ struct AddBookFooter: View {
     }
 
     private var actionButton: some View {
-        let label = viewModel.destination == .pile ? "積読ゾーンに落とす" : "本棚に貼る"
+        let label = viewModel.destination == .pile ? "積読に追加" : "本棚に追加"
         return Button {
             Task {
                 if await viewModel.addSelected() != nil {
