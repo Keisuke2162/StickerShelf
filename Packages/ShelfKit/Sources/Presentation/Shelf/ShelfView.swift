@@ -8,7 +8,6 @@ public struct ShelfView: View {
     @State private var viewModel: ShelfViewModel
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
-    @State private var showDeleteBoardConfirm = false
     @State private var editingBoard: Board?
     @Environment(ThemeStore.self) private var theme
 
@@ -53,14 +52,6 @@ public struct ShelfView: View {
         .sheet(item: $editingBoard) { b in
             BoardEditorView(container: container, board: b)
         }
-        .alert("この本棚を削除しますか？", isPresented: $showDeleteBoardConfirm) {
-            Button("削除", role: .destructive) {
-                Task { await viewModel.deleteCurrentBoard() }
-            }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("本棚に貼られていた本は「所属なし」になります。本自体は残ります。")
-        }
     }
 
     private var header: some View {
@@ -69,18 +60,6 @@ public struct ShelfView: View {
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
             Spacer()
-            if viewModel.boards.count > 1 && viewModel.selectedBoardID != nil {
-                Button {
-                    showDeleteBoardConfirm = true
-                } label: {
-                    Image(systemName: "trash")
-                        .frame(width: 44, height: 44)
-                        .background(Circle().fill(ColorToken.surface))
-                        .foregroundStyle(ColorToken.sunday)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("現在の本棚を削除")
-            }
             Button {
                 viewModel.display = viewModel.display == .board ? .list : .board
             } label: {

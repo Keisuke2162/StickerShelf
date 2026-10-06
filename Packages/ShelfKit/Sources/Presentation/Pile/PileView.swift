@@ -10,7 +10,6 @@ public struct PileView: View {
     @State private var pileItems: [PileDynamicsView.Item] = []
     @State private var showCreateFolder = false
     @State private var newFolderName = ""
-    @State private var showDeleteFolderConfirm = false
     @State private var editingBoard: Board?
     @Environment(ThemeStore.self) private var theme
 
@@ -58,14 +57,6 @@ public struct PileView: View {
             }
             Button("キャンセル", role: .cancel) { newFolderName = "" }
         }
-        .alert("このフォルダを削除しますか？", isPresented: $showDeleteFolderConfirm) {
-            Button("削除", role: .destructive) {
-                Task { await viewModel.deleteCurrentBoard() }
-            }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("フォルダに属していた本は「未分類」になります。本自体は残ります。")
-        }
         .confirmationDialog(
             "この本をどうしますか？",
             isPresented: Binding(get: { longPressTarget != nil }, set: { if !$0 { longPressTarget = nil } }),
@@ -98,18 +89,6 @@ public struct PileView: View {
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
             Spacer()
-            if viewModel.selectedBoardID != nil {
-                Button {
-                    showDeleteFolderConfirm = true
-                } label: {
-                    Image(systemName: "trash")
-                        .frame(width: 44, height: 44)
-                        .background(Circle().fill(ColorToken.surface))
-                        .foregroundStyle(ColorToken.sunday)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("現在のフォルダを削除")
-            }
             Button {
                 viewModel.display = viewModel.display == .pile ? .list : .pile
             } label: {

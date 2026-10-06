@@ -13,6 +13,7 @@ struct BoardEditorView: View {
     @State private var pattern: BoardPattern
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var showDeleteConfirm = false
     @Environment(\.dismiss) private var dismiss
 
     init(container: PresentationContainer, board: Board) {
@@ -61,6 +62,15 @@ struct BoardEditorView: View {
                         .font(FontToken.caption())
                         .foregroundStyle(ColorToken.sunday)
                 }
+
+                Section {
+                    Button(role: .destructive) {
+                        showDeleteConfirm = true
+                    } label: {
+                        Label(board.kind == .shelf ? "この本棚を削除" : "このフォルダを削除",
+                              systemImage: "trash")
+                    }
+                }
             }
             .navigationTitle("ボードを編集")
             .navigationBarTitleDisplayMode(.inline)
@@ -72,6 +82,15 @@ struct BoardEditorView: View {
                     Button("保存") { Task { await save() } }
                         .disabled(isSaving || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+            }
+            .alert(board.kind == .shelf ? "この本棚を削除しますか？" : "このフォルダを削除しますか？",
+                   isPresented: $showDeleteConfirm) {
+                Button("削除", role: .destructive) { Task { await delete() } }
+                Button("キャンセル", role: .cancel) {}
+            } message: {
+                Text(board.kind == .shelf
+                     ? "本棚に貼られていた本は「所属なし」になります。本自体は残ります。"
+                     : "フォルダに属していた本は「未分類」になります。本自体は残ります。")
             }
         }
     }
@@ -121,6 +140,15 @@ struct BoardEditorView: View {
                 name: trimmed,
                 appearance: BoardAppearance(color: color, pattern: pattern)
             )
+            dismiss()
+        } catch {
+            errorMessage = DomainErrorMessage.describe(error)
+        }
+    }
+
+    private func delete() async {
+        do {
+            try await container.deleteBoard.execute(id: board.id)
             dismiss()
         } catch {
             errorMessage = DomainErrorMessage.describe(error)
