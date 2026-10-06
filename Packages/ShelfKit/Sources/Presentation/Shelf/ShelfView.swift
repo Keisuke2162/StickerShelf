@@ -88,14 +88,7 @@ public struct ShelfView: View {
     private var boardChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(viewModel.boards) { board in
-                    Chip(
-                        title: board.name,
-                        isSelected: viewModel.selectedBoardID == board.id,
-                        action: { viewModel.select(boardID: board.id) },
-                        onLongPress: { editingBoard = board }
-                    )
-                }
+                // フォルダが増えてもすぐ押せるよう追加ボタンは左端に固定。
                 Button {
                     showCreateBoard = true
                 } label: {
@@ -109,6 +102,14 @@ public struct ShelfView: View {
                 .buttonStyle(.plain)
                 .frame(minHeight: 44)
                 .accessibilityLabel("本棚を追加")
+                ForEach(viewModel.boards) { board in
+                    Chip(
+                        title: board.name,
+                        isSelected: viewModel.selectedBoardID == board.id,
+                        action: { viewModel.select(boardID: board.id) },
+                        onLongPress: { editingBoard = board }
+                    )
+                }
             }
             .padding(.horizontal, 4)
         }

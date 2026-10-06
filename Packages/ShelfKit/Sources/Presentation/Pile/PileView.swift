@@ -116,17 +116,7 @@ public struct PileView: View {
     private var folderChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                Chip(title: "すべて", isSelected: viewModel.selectedBoardID == nil) {
-                    viewModel.select(boardID: nil)
-                }
-                ForEach(viewModel.boards) { board in
-                    Chip(
-                        title: board.name,
-                        isSelected: viewModel.selectedBoardID == board.id,
-                        action: { viewModel.select(boardID: board.id) },
-                        onLongPress: { editingBoard = board }
-                    )
-                }
+                // フォルダが増えてもすぐ押せるよう追加ボタンは左端に固定。
                 Button {
                     showCreateFolder = true
                 } label: {
@@ -140,6 +130,17 @@ public struct PileView: View {
                 .buttonStyle(.plain)
                 .frame(minHeight: 44)
                 .accessibilityLabel("フォルダを追加")
+                Chip(title: "すべて", isSelected: viewModel.selectedBoardID == nil) {
+                    viewModel.select(boardID: nil)
+                }
+                ForEach(viewModel.boards) { board in
+                    Chip(
+                        title: board.name,
+                        isSelected: viewModel.selectedBoardID == board.id,
+                        action: { viewModel.select(boardID: board.id) },
+                        onLongPress: { editingBoard = board }
+                    )
+                }
             }
             .padding(.horizontal, 4)
         }
