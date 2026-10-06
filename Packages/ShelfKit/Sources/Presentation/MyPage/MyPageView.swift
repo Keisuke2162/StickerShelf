@@ -6,11 +6,13 @@ import Application
 /// マイページタブ。ユーザー情報（仮）と既存の設定項目をまとめて 1 画面に表示する。
 public struct MyPageView: View {
     private let container: PresentationContainer
+    private let router: Router
     @State private var viewModel: SettingsViewModel
     @Environment(ThemeStore.self) private var theme
 
-    public init(container: PresentationContainer) {
+    public init(container: PresentationContainer, router: Router) {
         self.container = container
+        self.router = router
         self._viewModel = State(initialValue: SettingsViewModel(container: container))
     }
 
@@ -46,6 +48,14 @@ public struct MyPageView: View {
 
                 Section("テーマカラー") {
                     themeColorPicker
+                }
+
+                Section("メモ") {
+                    NavigationLink {
+                        MemoListView(container: container, router: router)
+                    } label: {
+                        Label("気になる本メモ", systemImage: "list.bullet.clipboard")
+                    }
                 }
 
                 Section("書籍検索API") {

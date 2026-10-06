@@ -31,7 +31,7 @@ public struct RootView: View {
                 .tabItem { Label("カレンダー", systemImage: "calendar") }
                 .tag(Router.Tab.calendar)
 
-            MyPageView(container: container)
+            MyPageView(container: container, router: router)
                 .tabItem { Label("マイページ", systemImage: "person.circle") }
                 .tag(Router.Tab.settings)
         }

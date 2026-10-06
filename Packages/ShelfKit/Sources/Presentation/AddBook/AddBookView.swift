@@ -9,7 +9,6 @@ public struct AddBookView: View {
     @State private var viewModel: AddBookViewModel
     @State private var showScanner = false
     @State private var showManualEntry = false
-    @State private var showMemoList = false
     @Environment(ThemeStore.self) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -28,7 +27,7 @@ public struct AddBookView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
-    /// 本棚/積読/カレンダーと同じ screenTitle のヘッダー。左端に閉じる、右端にメモ画面への遷移ボタン。
+    /// 本棚/積読/カレンダーと同じ screenTitle のヘッダー。左端に閉じるボタン。
     private var header: some View {
         HStack(spacing: 10) {
             Button { dismiss() } label: {
@@ -44,14 +43,6 @@ public struct AddBookView: View {
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
             Spacer()
-            Button { showMemoList = true } label: {
-                Image(systemName: "list.bullet.clipboard")
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(ColorToken.surface))
-                    .foregroundStyle(ColorToken.ink)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("気になる本メモを開く")
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -120,9 +111,6 @@ public struct AddBookView: View {
                         }
                     }
                 }
-            }
-            .navigationDestination(isPresented: $showMemoList) {
-                MemoListView(container: container, router: router)
             }
     }
 
