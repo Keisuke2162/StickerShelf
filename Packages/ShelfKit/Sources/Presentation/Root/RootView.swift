@@ -13,12 +13,32 @@ public struct RootView: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            content
-                .padding(.bottom, 84)
-            CustomTabBar(router: router)
+        // iOS 26 以降は TabView を使うと Liquid Glass デザインが自動適用される。
+        // タブの選択状態は @Observable の Router を @Bindable 経由で Binding に変換。
+        @Bindable var routerBinding = router
+        return TabView(selection: $routerBinding.selectedTab) {
+            ShelfView(container: container, router: router)
+                .tabItem { Label("本棚", systemImage: "square.on.square") }
+                .tag(Router.Tab.shelf)
+
+            PileView(container: container, router: router)
+                .tabItem { Label("積読", systemImage: "square.stack.3d.down.right") }
+                .tag(Router.Tab.pile)
+
+            NavigationStack {
+                AddBookView(container: container, router: router)
+            }
+            .tabItem { Label("本", systemImage: "book.closed") }
+            .tag(Router.Tab.book)
+
+            CalendarView(container: container, router: router)
+                .tabItem { Label("カレンダー", systemImage: "calendar") }
+                .tag(Router.Tab.calendar)
+
+            MyPageView(container: container)
+                .tabItem { Label("マイページ", systemImage: "person.circle") }
+                .tag(Router.Tab.settings)
         }
-        .background(ColorToken.boardBackground.ignoresSafeArea())
         .sheet(item: Binding(
             get: { router.detailBookID.map(DetailBookWrapper.init(id:)) },
             set: { router.detailBookID = $0?.id }
@@ -33,24 +53,6 @@ public struct RootView: View {
         }
         .task {
             applyStartScreen()
-        }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        switch router.selectedTab {
-        case .shelf:
-            ShelfView(container: container, router: router)
-        case .pile:
-            PileView(container: container, router: router)
-        case .book:
-            NavigationStack {
-                AddBookView(container: container, router: router)
-            }
-        case .calendar:
-            CalendarView(container: container, router: router)
-        case .settings:
-            MyPageView(container: container)
         }
     }
 
