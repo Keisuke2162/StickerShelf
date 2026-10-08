@@ -212,16 +212,25 @@ public struct ShelfView: View {
 
     private var magnifyBoardGesture: some Gesture {
         MagnifyGesture()
-            .updating($pinchDelta) { value, state, _ in state = value.magnification }
+            .updating($pinchDelta) { value, state, _ in
+                // 変形ハンドル表示中はボード操作を無効化し、書影の編集に専念させる。
+                guard viewModel.selectedStickerID == nil else { return }
+                state = value.magnification
+            }
             .onEnded { value in
+                guard viewModel.selectedStickerID == nil else { return }
                 boardScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
             }
     }
 
     private func panBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 10, coordinateSpace: .local)
-            .updating($panDelta) { value, state, _ in state = value.translation }
+            .updating($panDelta) { value, state, _ in
+                guard viewModel.selectedStickerID == nil else { return }
+                state = value.translation
+            }
             .onEnded { value in
+                guard viewModel.selectedStickerID == nil else { return }
                 let scale = boardScale
                 let maxX = max(0, (canvas.width * scale - viewport.width) / 2)
                 let maxY = max(0, (canvas.height * scale - viewport.height) / 2)
