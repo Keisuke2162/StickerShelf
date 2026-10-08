@@ -9,18 +9,7 @@ public struct ShelfView: View {
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
     @State private var editingBoard: Board?
-    /// キャンバス表示用。viewport は固定、内側のキャンバスを拡大 (2.5倍) してパン/ズームする。
-    @State private var boardScale: CGFloat = 1.0
-    @State private var boardOffset: CGSize = .zero
-    /// ピンチ中のみ使う anchor。ピンチ終了時に .center に戻し、offset を補正する。
-    @GestureState private var pinchAnchor: UnitPoint = .center
-    @GestureState private var pinchDelta: CGFloat = 1.0
-    @GestureState private var panDelta: CGSize = .zero
     @Environment(ThemeStore.self) private var theme
-
-    private let canvasMultiplier: CGFloat = 2.5
-    private let minScale: CGFloat = 0.4
-    private let maxScale: CGFloat = 1.6
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -129,39 +118,41 @@ public struct ShelfView: View {
     private var board: some View {
         let appearance = currentBoard?.appearance ?? .default
         return GeometryReader { geo in
-            let viewport = geo.size
-            let canvas = CGSize(width: viewport.width * canvasMultiplier,
-                                height: viewport.height * canvasMultiplier)
-            // ピンチ中もスケール下限を強制して、キャンバスが viewport より小さく表示されないようにする。
-            let effectiveScale = (boardScale * pinchDelta).clamped(to: minScale...maxScale)
-            // ドラッグ中もキャンバスが viewport の外に出ないよう即時クランプする。
-            let maxOffsetX = max(0, (canvas.width * effectiveScale - viewport.width) / 2)
-            let maxOffsetY = max(0, (canvas.height * effectiveScale - viewport.height) / 2)
-            let effectiveOffset = CGSize(
-                width: (boardOffset.width + panDelta.width).clamped(to: -maxOffsetX...maxOffsetX),
-                height: (boardOffset.height + panDelta.height).clamped(to: -maxOffsetY...maxOffsetY)
-            )
-
-            // キャンバス（widgets の実配置領域）。
-            let canvasView = ZStack {
+            ZStack {
                 BoardBackgroundView(appearance: appearance)
-                    .frame(width: canvas.width, height: canvas.height)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // 空白領域のタップ/長押し/パン/ピンチ。ステッカー上は子要素優先で発火しない。
+                // 空白タップで選択解除。長押しで現在のボード編集画面を開く。
+                // ステッカー（上の層）に触れている場合はそちらの gesture が優先される。
                 Color.clear
-                    .frame(width: canvas.width, height: canvas.height)
                     .contentShape(Rectangle())
-                    .onTapGesture { viewModel.selectedStickerID = nil }
-                    .onLongPressGesture(minimumDuration: 0.4) {
-                        if let board = currentBoard { editingBoard = board }
+                    .onTapGesture {
+                        viewModel.selectedStickerID = nil
                     }
-                    .simultaneousGesture(magnifyBoardGesture(viewport: viewport, canvas: canvas))
-                    .simultaneousGesture(panBoardGesture(viewport: viewport, canvas: canvas))
+                    .onLongPressGesture(minimumDuration: 0.4) {
+                        if let board = currentBoard {
+                            editingBoard = board
+                        }
+                    }
 
                 if viewModel.boards.isEmpty && !viewModel.isLoading {
-                    emptyBoardsPlaceholder
+                    VStack(spacing: 12) {
+                        Text("本棚がありません").font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
+                        Button {
+                            showCreateBoard = true
+                        } label: {
+                            Label("本棚を作成", systemImage: "plus")
+                                .font(FontToken.sectionTitle())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 20).padding(.vertical, 10)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.accent))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 } else if viewModel.books.isEmpty && !viewModel.isLoading {
-                    EmptyShelfPlaceholder { router.isAddingBook = true }
+                    EmptyShelfPlaceholder {
+                        router.isAddingBook = true
+                    }
                 }
 
                 // VM の books は既に zIndex 昇順でソート済み（FetchShelfUseCase 側で保証）
@@ -170,7 +161,7 @@ public struct ShelfView: View {
                         StickerDraggable(
                             book: book,
                             placement: placement,
-                            boardSize: canvas,
+                            boardSize: geo.size,
                             viewModel: viewModel,
                             router: router,
                             container: container
@@ -179,78 +170,11 @@ public struct ShelfView: View {
                     }
                 }
             }
-            .frame(width: canvas.width, height: canvas.height)
-            // stickerBoard 座標系は変換 (scale/offset) の内側で固定する。
-            // こうすることでステッカーの変形ハンドルがキャンバス座標系で位置を測り、
-            // パン/ズーム適用後も中心位置と一致して回転・拡縮の方向が逆転しない。
             .coordinateSpace(name: "stickerBoard")
-
-            canvasView
-                .scaleEffect(effectiveScale, anchor: pinchAnchor)
-                .offset(effectiveOffset)
-                .frame(width: viewport.width, height: viewport.height, alignment: .center)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
-                .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
+            .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
         }
-    }
-
-    @ViewBuilder
-    private var emptyBoardsPlaceholder: some View {
-        VStack(spacing: 12) {
-            Text("本棚がありません").font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
-            Button {
-                showCreateBoard = true
-            } label: {
-                Label("本棚を作成", systemImage: "plus")
-                    .font(FontToken.sectionTitle())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 20).padding(.vertical, 10)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.accent))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private func magnifyBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
-        MagnifyGesture()
-            .updating($pinchDelta) { value, state, _ in state = value.magnification }
-            // ピンチ中は startAnchor を dynamic anchor として使い、指でつまんだ場所を中心にズーム。
-            .updating($pinchAnchor) { value, state, _ in state = value.startAnchor }
-            .onEnded { value in
-                let newScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
-                // anchor が .center 以外のまま終了すると offset 計算が崩れるので、
-                // 「anchor でズームした見た目」を「.center anchor + 補正 offset」で再現する。
-                let p = value.startAnchor
-                let dpX = (p.x - 0.5) * canvas.width
-                let dpY = (p.y - 0.5) * canvas.height
-                let newOffsetX = boardOffset.width - (newScale - boardScale) * dpX
-                let newOffsetY = boardOffset.height - (newScale - boardScale) * dpY
-                let maxX = max(0, (canvas.width * newScale - viewport.width) / 2)
-                let maxY = max(0, (canvas.height * newScale - viewport.height) / 2)
-                boardOffset = CGSize(
-                    width: newOffsetX.clamped(to: -maxX...maxX),
-                    height: newOffsetY.clamped(to: -maxY...maxY)
-                )
-                boardScale = newScale
-                // pinchAnchor は @GestureState なので gesture 終了で自動的に .center に戻る。
-            }
-    }
-
-    private func panBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
-        // .local だと DragGesture を貼った Color.clear が offset の中に居るため、パン中に自身が動いて
-        // translation が揺れて震える。.global で画面座標の差分を取ることで安定させる。
-        DragGesture(minimumDistance: 10, coordinateSpace: .global)
-            .updating($panDelta) { value, state, _ in state = value.translation }
-            .onEnded { value in
-                let scale = boardScale
-                let maxX = max(0, (canvas.width * scale - viewport.width) / 2)
-                let maxY = max(0, (canvas.height * scale - viewport.height) / 2)
-                boardOffset = CGSize(
-                    width: (boardOffset.width + value.translation.width).clamped(to: -maxX...maxX),
-                    height: (boardOffset.height + value.translation.height).clamped(to: -maxY...maxY)
-                )
-            }
     }
 
     /// 現在選択中のボード（表示用）。
