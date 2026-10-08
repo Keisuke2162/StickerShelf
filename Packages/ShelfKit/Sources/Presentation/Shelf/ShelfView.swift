@@ -12,8 +12,8 @@ public struct ShelfView: View {
     /// キャンバス表示用。viewport は固定、内側のキャンバスを拡大 (2.5倍) してパン/ズームする。
     @State private var boardScale: CGFloat = 1.0
     @State private var boardOffset: CGSize = .zero
-    /// 最後にピンチした中心（UnitPoint）。次のピンチまで維持。
-    @State private var pinchAnchor: UnitPoint = .center
+    /// ピンチ中のみ使う anchor。ピンチ終了時に .center に戻し、offset を補正する。
+    @GestureState private var pinchAnchor: UnitPoint = .center
     @GestureState private var pinchDelta: CGFloat = 1.0
     @GestureState private var panDelta: CGSize = .zero
     @Environment(ThemeStore.self) private var theme
@@ -155,7 +155,7 @@ public struct ShelfView: View {
                     .onLongPressGesture(minimumDuration: 0.4) {
                         if let board = currentBoard { editingBoard = board }
                     }
-                    .simultaneousGesture(magnifyBoardGesture)
+                    .simultaneousGesture(magnifyBoardGesture(viewport: viewport, canvas: canvas))
                     .simultaneousGesture(panBoardGesture(viewport: viewport, canvas: canvas))
 
                 if viewModel.boards.isEmpty && !viewModel.isLoading {
@@ -212,15 +212,28 @@ public struct ShelfView: View {
         }
     }
 
-    private var magnifyBoardGesture: some Gesture {
+    private func magnifyBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
         MagnifyGesture()
             .updating($pinchDelta) { value, state, _ in state = value.magnification }
-            .onChanged { value in
-                // ピンチ開始位置を anchor にすることで、指でつまんだ場所を中心にズームする。
-                pinchAnchor = value.startAnchor
-            }
+            // ピンチ中は startAnchor を dynamic anchor として使い、指でつまんだ場所を中心にズーム。
+            .updating($pinchAnchor) { value, state, _ in state = value.startAnchor }
             .onEnded { value in
-                boardScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
+                let newScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
+                // anchor が .center 以外のまま終了すると offset 計算が崩れるので、
+                // 「anchor でズームした見た目」を「.center anchor + 補正 offset」で再現する。
+                let p = value.startAnchor
+                let dpX = (p.x - 0.5) * canvas.width
+                let dpY = (p.y - 0.5) * canvas.height
+                let newOffsetX = boardOffset.width - (newScale - boardScale) * dpX
+                let newOffsetY = boardOffset.height - (newScale - boardScale) * dpY
+                let maxX = max(0, (canvas.width * newScale - viewport.width) / 2)
+                let maxY = max(0, (canvas.height * newScale - viewport.height) / 2)
+                boardOffset = CGSize(
+                    width: newOffsetX.clamped(to: -maxX...maxX),
+                    height: newOffsetY.clamped(to: -maxY...maxY)
+                )
+                boardScale = newScale
+                // pinchAnchor は @GestureState なので gesture 終了で自動的に .center に戻る。
             }
     }
 
