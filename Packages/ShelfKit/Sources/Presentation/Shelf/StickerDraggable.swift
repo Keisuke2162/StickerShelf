@@ -32,7 +32,17 @@ struct StickerDraggable: View {
         (effectivePlacement.scale * resizeMultiplier).clamped(to: StickerPlacement.scaleRange)
     }
     private var liveRotation: Double {
-        (effectivePlacement.rotationDegrees + rotateDelta.degrees).clamped(to: StickerPlacement.rotationRange)
+        let raw = (effectivePlacement.rotationDegrees + rotateDelta.degrees).clamped(to: StickerPlacement.rotationRange)
+        return Self.snapToRightAngle(raw)
+    }
+
+    /// Figma 的な直角スナップ：-180°/-90°/0°/90°/180° の近傍 ±6° で止める。
+    /// ドラッグ中にちょっと通り抜けづらくなり、直角方向を狙いやすい。
+    private static func snapToRightAngle(_ degrees: Double) -> Double {
+        let targets: [Double] = [-180, -90, 0, 90, 180]
+        let threshold: Double = 6
+        for t in targets where abs(degrees - t) < threshold { return t }
+        return degrees
     }
 
     var body: some View {
@@ -270,7 +280,8 @@ struct StickerDraggable: View {
             nextY = base.y
         }
         let nextScale = (base.scale * scaleMultiplier).clamped(to: StickerPlacement.scaleRange)
-        let nextRotation = (base.rotationDegrees + rotation.degrees).clamped(to: StickerPlacement.rotationRange)
+        let rawRotation = (base.rotationDegrees + rotation.degrees).clamped(to: StickerPlacement.rotationRange)
+        let nextRotation = Self.snapToRightAngle(rawRotation)
         let next = StickerPlacement(x: nextX, y: nextY, rotationDegrees: nextRotation, scale: nextScale, zIndex: base.zIndex)
         localPlacement = next
         hasBroughtToFront = false
