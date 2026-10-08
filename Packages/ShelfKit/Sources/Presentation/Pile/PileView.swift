@@ -190,7 +190,11 @@ public struct PileView: View {
                     PileDynamicsView(
                         items: pileItems,
                         onTap: { id in router.detailBookID = id },
-                        onLongPress: { id in longPressTarget = id }
+                        onLongPress: { id in longPressTarget = id },
+                        // ファーストビュー (下端表示) の上端あたりから落下開始させる。
+                        // referenceView の高さ = geo.size.height * heightMultiplier、ファーストビュー下端 = referenceView 下端
+                        // → ファーストビュー上端 = referenceView 下端 - viewport 高 = referenceView の中段付近
+                        dropFromY: geo.size.height * (heightMultiplier - 1)
                     )
                     .frame(width: geo.size.width, height: geo.size.height * heightMultiplier)
                     .clipShape(RoundedRectangle(cornerRadius: 14))

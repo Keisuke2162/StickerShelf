@@ -18,18 +18,23 @@ struct PileDynamicsView: UIViewRepresentable {
     let items: [Item]
     let onTap: @MainActor (BookID) -> Void
     let onLongPress: @MainActor (BookID) -> Void
+    /// 落下の初期 Y 位置。referenceView の top から y=`dropFromY - itemHeight - 余白` に生成する。
+    /// 縦長スクロールでファーストビュー付近から落ちてほしい場合、viewport の高さを渡す。
+    var dropFromY: CGFloat = 0
 
     func makeUIView(context: Context) -> ContainerView {
         let view = ContainerView()
         view.backgroundColor = .clear
         view.clipsToBounds = true // 万一の透過でも bounds 外にレンダされないように
         context.coordinator.container = view
+        context.coordinator.dropFromY = dropFromY
         context.coordinator.rebuild(with: items)
         return view
     }
 
     func updateUIView(_ uiView: ContainerView, context: Context) {
         context.coordinator.container = uiView
+        context.coordinator.dropFromY = dropFromY
         if context.coordinator.currentItemIDs != items.map(\.id) {
             context.coordinator.rebuild(with: items)
         } else {
@@ -87,6 +92,9 @@ struct PileDynamicsView: UIViewRepresentable {
         private var pendingItems: [Item] = []
 
         private(set) var currentItemIDs: [BookID] = []
+        /// 落下開始 Y（referenceView 内の位置）。縦に広い referenceView の場合でも、
+        /// 画面に見える範囲 (ファーストビュー) の上から落ちるよう親から設定する。
+        var dropFromY: CGFloat = 0
 
         init(onTap: @escaping @MainActor (BookID) -> Void, onLongPress: @escaping @MainActor (BookID) -> Void) {
             self.onTap = onTap
@@ -143,7 +151,8 @@ struct PileDynamicsView: UIViewRepresentable {
                 let maxX = max(padding, size.width - padding - s.width)
                 let x = CGFloat.random(in: padding...max(padding + 1, maxX))
                 // index * 36 で縦にずらして同時衝突を減らす
-                let y = -s.height - 20 - CGFloat(index) * 36
+                // dropFromY = 0 なら referenceView の top から、>0 ならその位置の上から落ちる。
+                let y = dropFromY - s.height - 20 - CGFloat(index) * 36
                 let view = ItemView(item: item,
                                     onTap: { [weak self] id in self?.onTap(id) },
                                     onLongPress: { [weak self] id in self?.onLongPress(id) })
