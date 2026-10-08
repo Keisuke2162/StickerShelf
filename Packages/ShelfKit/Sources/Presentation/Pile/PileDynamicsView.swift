@@ -33,9 +33,14 @@ struct PileDynamicsView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: ContainerView, context: Context) {
+        // SwiftUI 側で view hierarchy が再構築されると UIView (container) が差し替わることがある
+        // (例: fullScreenCover を閉じて PileView に戻った直後)。この場合、既存の itemViews は
+        // 旧 container の subview のままで新 container は空 → 本が「消えて」見える。
+        // container が変わったときは rebuild で新 container に再 addSubview する。
+        let containerChanged = context.coordinator.container !== uiView
         context.coordinator.container = uiView
         context.coordinator.dropFromY = dropFromY
-        if context.coordinator.currentItemIDs != items.map(\.id) {
+        if containerChanged || context.coordinator.currentItemIDs != items.map(\.id) {
             context.coordinator.rebuild(with: items)
         } else {
             // 向きや画像など軽い差分だけ反映
