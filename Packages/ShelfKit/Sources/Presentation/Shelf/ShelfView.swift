@@ -12,6 +12,8 @@ public struct ShelfView: View {
     /// キャンバス表示用。viewport は固定、内側のキャンバスを拡大 (2.5倍) してパン/ズームする。
     @State private var boardScale: CGFloat = 1.0
     @State private var boardOffset: CGSize = .zero
+    /// 最後にピンチした中心（UnitPoint）。次のピンチまで維持。
+    @State private var pinchAnchor: UnitPoint = .center
     @GestureState private var pinchDelta: CGFloat = 1.0
     @GestureState private var panDelta: CGSize = .zero
     @Environment(ThemeStore.self) private var theme
@@ -184,7 +186,7 @@ public struct ShelfView: View {
             .coordinateSpace(name: "stickerBoard")
 
             canvasView
-                .scaleEffect(effectiveScale)
+                .scaleEffect(effectiveScale, anchor: pinchAnchor)
                 .offset(effectiveOffset)
                 .frame(width: viewport.width, height: viewport.height, alignment: .center)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -213,6 +215,10 @@ public struct ShelfView: View {
     private var magnifyBoardGesture: some Gesture {
         MagnifyGesture()
             .updating($pinchDelta) { value, state, _ in state = value.magnification }
+            .onChanged { value in
+                // ピンチ開始位置を anchor にすることで、指でつまんだ場所を中心にズームする。
+                pinchAnchor = value.startAnchor
+            }
             .onEnded { value in
                 boardScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
             }
