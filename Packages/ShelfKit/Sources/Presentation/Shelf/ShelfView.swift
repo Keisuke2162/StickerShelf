@@ -219,7 +219,9 @@ public struct ShelfView: View {
     }
 
     private func panBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 10, coordinateSpace: .local)
+        // .local だと DragGesture を貼った Color.clear が offset の中に居るため、パン中に自身が動いて
+        // translation が揺れて震える。.global で画面座標の差分を取ることで安定させる。
+        DragGesture(minimumDistance: 10, coordinateSpace: .global)
             .updating($panDelta) { value, state, _ in state = value.translation }
             .onEnded { value in
                 let scale = boardScale
