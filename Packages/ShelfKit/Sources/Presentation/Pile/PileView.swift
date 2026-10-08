@@ -226,10 +226,15 @@ public struct PileView: View {
         var out: [PileDynamicsView.Item] = []
         out.reserveCapacity(viewModel.books.count)
         for book in viewModel.books {
+            // 画像ロードが長いと view 再構築で task が cancel され、途中結果 (2〜数冊だけ) で
+            // pileItems が上書きされて本が消える現象が起きる。cancel 時は中途半端な out を破棄。
+            if Task.isCancelled { return }
             let data = (try? await container.coverImages.imageData(for: book.cover)) ?? nil
+            if Task.isCancelled { return }
             let size = pileCellSize(for: data, bookID: book.id)
             out.append(.init(id: book.id, title: book.metadata.title, size: size, imageData: data))
         }
+        guard !Task.isCancelled else { return }
         pileItems = out
     }
 
