@@ -145,8 +145,7 @@ public struct ShelfView: View {
                 BoardBackgroundView(appearance: appearance)
                     .frame(width: canvas.width, height: canvas.height)
 
-                // 空白タップ・長押し。パンの DragGesture と両立させるため .simultaneousGesture でなく
-                // 直接 Rectangle に .onTap/.onLongPress を貼る。
+                // 空白領域のタップ/長押し/パン/ピンチ。ステッカー上は子要素優先で発火しない。
                 Color.clear
                     .frame(width: canvas.width, height: canvas.height)
                     .contentShape(Rectangle())
@@ -154,6 +153,8 @@ public struct ShelfView: View {
                     .onLongPressGesture(minimumDuration: 0.4) {
                         if let board = currentBoard { editingBoard = board }
                     }
+                    .simultaneousGesture(magnifyBoardGesture)
+                    .simultaneousGesture(panBoardGesture(viewport: viewport, canvas: canvas))
 
                 if viewModel.boards.isEmpty && !viewModel.isLoading {
                     emptyBoardsPlaceholder
@@ -186,10 +187,6 @@ public struct ShelfView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
                 .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
-                // 2 本指ピンチでズーム。
-                .simultaneousGesture(magnifyBoardGesture)
-                // 空白領域の 1 本指パン。ステッカー上のドラッグは子要素が優先される。
-                .simultaneousGesture(panBoardGesture(viewport: viewport, canvas: canvas))
         }
     }
 
@@ -212,25 +209,16 @@ public struct ShelfView: View {
 
     private var magnifyBoardGesture: some Gesture {
         MagnifyGesture()
-            .updating($pinchDelta) { value, state, _ in
-                // 変形ハンドル表示中はボード操作を無効化し、書影の編集に専念させる。
-                guard viewModel.selectedStickerID == nil else { return }
-                state = value.magnification
-            }
+            .updating($pinchDelta) { value, state, _ in state = value.magnification }
             .onEnded { value in
-                guard viewModel.selectedStickerID == nil else { return }
                 boardScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
             }
     }
 
     private func panBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 10, coordinateSpace: .local)
-            .updating($panDelta) { value, state, _ in
-                guard viewModel.selectedStickerID == nil else { return }
-                state = value.translation
-            }
+            .updating($panDelta) { value, state, _ in state = value.translation }
             .onEnded { value in
-                guard viewModel.selectedStickerID == nil else { return }
                 let scale = boardScale
                 let maxX = max(0, (canvas.width * scale - viewport.width) / 2)
                 let maxY = max(0, (canvas.height * scale - viewport.height) / 2)
