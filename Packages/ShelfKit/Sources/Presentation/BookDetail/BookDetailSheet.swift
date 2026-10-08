@@ -212,6 +212,7 @@ public struct BookDetailSheet: View {
                 if let bound = date.wrappedValue {
                     DatePicker("", selection: Binding(get: { bound }, set: { date.wrappedValue = $0 }), displayedComponents: .date)
                         .labelsHidden()
+                        .environment(\.locale, Locale(identifier: "ja_JP"))
                     Spacer()
                     Button(action: { date.wrappedValue = nil }) {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(ColorToken.inkTertiary)
@@ -295,6 +296,7 @@ public struct BookDetailSheet: View {
             HStack(spacing: 8) {
                 DatePicker("", selection: $readDate, displayedComponents: .date)
                     .labelsHidden()
+                    .environment(\.locale, Locale(identifier: "ja_JP"))
                 Spacer(minLength: 8)
                 Button {
                     let date = readDate
@@ -329,7 +331,7 @@ public struct BookDetailSheet: View {
 
     private func readLogRow(day: Date) -> some View {
         HStack {
-            Text(day, format: .dateTime.year().month().day().weekday(.narrow))
+            Text(day, format: .yyyyMMddSlash)
                 .font(FontToken.bodyRegular())
                 .foregroundStyle(ColorToken.ink)
             Spacer()

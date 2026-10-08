@@ -80,6 +80,7 @@ public struct AddBookView: View {
                         .frame(maxWidth: .infinity).padding()
                     }
                     DatePicker("購入日", selection: $viewModel.purchasedAt, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: "ja_JP"))
                 }
                 .padding(20)
             }

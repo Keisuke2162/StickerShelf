@@ -30,6 +30,7 @@ public struct BookPreviewAddView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     bookCard
                     DatePicker("購入日", selection: $viewModel.purchasedAt, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: "ja_JP"))
                         .padding(.horizontal, 20)
                 }
                 .padding(.top, 8)
