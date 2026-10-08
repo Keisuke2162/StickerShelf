@@ -9,7 +9,16 @@ public struct ShelfView: View {
     @State private var showCreateBoard = false
     @State private var newBoardName = ""
     @State private var editingBoard: Board?
+    /// キャンバス表示用。viewport は固定、内側のキャンバスを拡大 (2.5倍) してパン/ズームする。
+    @State private var boardScale: CGFloat = 1.0
+    @State private var boardOffset: CGSize = .zero
+    @GestureState private var pinchDelta: CGFloat = 1.0
+    @GestureState private var panDelta: CGSize = .zero
     @Environment(ThemeStore.self) private var theme
+
+    private let canvasMultiplier: CGFloat = 2.5
+    private let minScale: CGFloat = 0.4
+    private let maxScale: CGFloat = 1.6
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
@@ -118,41 +127,32 @@ public struct ShelfView: View {
     private var board: some View {
         let appearance = currentBoard?.appearance ?? .default
         return GeometryReader { geo in
-            ZStack {
-                BoardBackgroundView(appearance: appearance)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            let viewport = geo.size
+            let canvas = CGSize(width: viewport.width * canvasMultiplier,
+                                height: viewport.height * canvasMultiplier)
+            let effectiveScale = boardScale * pinchDelta
+            let effectiveOffset = CGSize(width: boardOffset.width + panDelta.width,
+                                         height: boardOffset.height + panDelta.height)
 
-                // 空白タップで選択解除。長押しで現在のボード編集画面を開く。
-                // ステッカー（上の層）に触れている場合はそちらの gesture が優先される。
+            // キャンバス（widgets の実配置領域）。
+            let canvasView = ZStack {
+                BoardBackgroundView(appearance: appearance)
+                    .frame(width: canvas.width, height: canvas.height)
+
+                // 空白タップ・長押し。パンの DragGesture と両立させるため .simultaneousGesture でなく
+                // 直接 Rectangle に .onTap/.onLongPress を貼る。
                 Color.clear
+                    .frame(width: canvas.width, height: canvas.height)
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.selectedStickerID = nil
-                    }
+                    .onTapGesture { viewModel.selectedStickerID = nil }
                     .onLongPressGesture(minimumDuration: 0.4) {
-                        if let board = currentBoard {
-                            editingBoard = board
-                        }
+                        if let board = currentBoard { editingBoard = board }
                     }
 
                 if viewModel.boards.isEmpty && !viewModel.isLoading {
-                    VStack(spacing: 12) {
-                        Text("本棚がありません").font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
-                        Button {
-                            showCreateBoard = true
-                        } label: {
-                            Label("本棚を作成", systemImage: "plus")
-                                .font(FontToken.sectionTitle())
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 20).padding(.vertical, 10)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.accent))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    emptyBoardsPlaceholder
                 } else if viewModel.books.isEmpty && !viewModel.isLoading {
-                    EmptyShelfPlaceholder {
-                        router.isAddingBook = true
-                    }
+                    EmptyShelfPlaceholder { router.isAddingBook = true }
                 }
 
                 // VM の books は既に zIndex 昇順でソート済み（FetchShelfUseCase 側で保証）
@@ -161,7 +161,7 @@ public struct ShelfView: View {
                         StickerDraggable(
                             book: book,
                             placement: placement,
-                            boardSize: geo.size,
+                            boardSize: canvas,
                             viewModel: viewModel,
                             router: router,
                             container: container
@@ -170,11 +170,60 @@ public struct ShelfView: View {
                     }
                 }
             }
-            .coordinateSpace(name: "stickerBoard")
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
-            .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
+            .frame(width: canvas.width, height: canvas.height)
+
+            canvasView
+                .scaleEffect(effectiveScale)
+                .offset(effectiveOffset)
+                .frame(width: viewport.width, height: viewport.height, alignment: .center)
+                .coordinateSpace(name: "stickerBoard")
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
+                .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
+                // 2 本指ピンチでズーム。
+                .simultaneousGesture(magnifyBoardGesture)
+                // 空白領域の 1 本指パン。ステッカー上のドラッグは子要素が優先される。
+                .simultaneousGesture(panBoardGesture(viewport: viewport, canvas: canvas))
         }
+    }
+
+    @ViewBuilder
+    private var emptyBoardsPlaceholder: some View {
+        VStack(spacing: 12) {
+            Text("本棚がありません").font(FontToken.bodyRegular()).foregroundStyle(ColorToken.inkSecondary)
+            Button {
+                showCreateBoard = true
+            } label: {
+                Label("本棚を作成", systemImage: "plus")
+                    .font(FontToken.sectionTitle())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 20).padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.accent))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var magnifyBoardGesture: some Gesture {
+        MagnifyGesture()
+            .updating($pinchDelta) { value, state, _ in state = value.magnification }
+            .onEnded { value in
+                boardScale = (boardScale * value.magnification).clamped(to: minScale...maxScale)
+            }
+    }
+
+    private func panBoardGesture(viewport: CGSize, canvas: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .local)
+            .updating($panDelta) { value, state, _ in state = value.translation }
+            .onEnded { value in
+                let scale = boardScale
+                let maxX = max(0, (canvas.width * scale - viewport.width) / 2)
+                let maxY = max(0, (canvas.height * scale - viewport.height) / 2)
+                boardOffset = CGSize(
+                    width: (boardOffset.width + value.translation.width).clamped(to: -maxX...maxX),
+                    height: (boardOffset.height + value.translation.height).clamped(to: -maxY...maxY)
+                )
+            }
     }
 
     /// 現在選択中のボード（表示用）。
