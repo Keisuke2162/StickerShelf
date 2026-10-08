@@ -11,6 +11,7 @@ public struct MemoSearchResultView: View {
     private let keyword: String
     @State private var viewModel: AddBookViewModel
     @Environment(ThemeStore.self) private var theme
+    @Environment(\.dismiss) private var dismiss
 
     public init(container: PresentationContainer, router: Router, keyword: String) {
         self.container = container
@@ -34,8 +35,17 @@ public struct MemoSearchResultView: View {
     }
 
     private var header: some View {
-        HStack {
-            Text(verbatim: "「\(keyword)」の検索結果")
+        HStack(spacing: 10) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(ColorToken.surface))
+                    .foregroundStyle(ColorToken.ink)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("メモに戻る")
+
+            Text(verbatim: keyword)
                 .font(FontToken.screenTitle())
                 .foregroundStyle(ColorToken.ink)
                 .lineLimit(1)
