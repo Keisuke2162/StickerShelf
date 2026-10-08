@@ -180,7 +180,9 @@ struct StickerDraggable: View {
 
     /// 長押し → ドラッグ。長押しで選択モード突入、選択中はドラッグで移動保存。
     private var moveGesture: some Gesture {
-        LongPressGesture(minimumDuration: longPressDuration)
+        // 選択モード中（変形ハンドル表示中）は長押し無しで即ドラッグできるよう minimumDuration を 0 に。
+        // 非選択時は従来通り longPressDuration (0.1s) の長押しが必要。
+        LongPressGesture(minimumDuration: isSelected ? 0 : longPressDuration)
             .sequenced(before: DragGesture(minimumDistance: 0))
             .updating($isPressing) { value, state, _ in
                 if case .second(let longPressed, _) = value { state = longPressed }
