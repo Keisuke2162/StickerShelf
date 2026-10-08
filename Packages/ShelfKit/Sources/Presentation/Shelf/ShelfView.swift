@@ -131,8 +131,13 @@ public struct ShelfView: View {
             let canvas = CGSize(width: viewport.width * canvasMultiplier,
                                 height: viewport.height * canvasMultiplier)
             let effectiveScale = boardScale * pinchDelta
-            let effectiveOffset = CGSize(width: boardOffset.width + panDelta.width,
-                                         height: boardOffset.height + panDelta.height)
+            // ドラッグ中もキャンバスが viewport の外に出ないよう即時クランプする。
+            let maxOffsetX = max(0, (canvas.width * effectiveScale - viewport.width) / 2)
+            let maxOffsetY = max(0, (canvas.height * effectiveScale - viewport.height) / 2)
+            let effectiveOffset = CGSize(
+                width: (boardOffset.width + panDelta.width).clamped(to: -maxOffsetX...maxOffsetX),
+                height: (boardOffset.height + panDelta.height).clamped(to: -maxOffsetY...maxOffsetY)
+            )
 
             // キャンバス（widgets の実配置領域）。
             let canvasView = ZStack {
