@@ -178,12 +178,15 @@ public struct ShelfView: View {
                 }
             }
             .frame(width: canvas.width, height: canvas.height)
+            // stickerBoard 座標系は変換 (scale/offset) の内側で固定する。
+            // こうすることでステッカーの変形ハンドルがキャンバス座標系で位置を測り、
+            // パン/ズーム適用後も中心位置と一致して回転・拡縮の方向が逆転しない。
+            .coordinateSpace(name: "stickerBoard")
 
             canvasView
                 .scaleEffect(effectiveScale)
                 .offset(effectiveOffset)
                 .frame(width: viewport.width, height: viewport.height, alignment: .center)
-                .coordinateSpace(name: "stickerBoard")
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(ColorToken.hairline, lineWidth: 1))
                 .shadow(color: ColorToken.ink.opacity(0.06), radius: 10, y: 4)
