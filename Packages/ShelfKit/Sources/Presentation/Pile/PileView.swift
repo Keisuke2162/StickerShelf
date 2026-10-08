@@ -168,35 +168,45 @@ public struct PileView: View {
     private var pileBoard: some View {
         // 「すべて」のときは Store の appearance を使う。
         let appearance = currentBoard?.appearance ?? allFolderStore.appearance
-        return ZStack(alignment: .top) {
-            // 背景は本棚ボードと同じ色/模様。物理シミュの床は PileDynamicsView 内の
-            // UICollisionBehavior が担当するので、ここに視覚的な床ラインは描かない。
-            BoardBackgroundView(appearance: appearance)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .contentShape(RoundedRectangle(cornerRadius: 14))
-                .onLongPressGesture(minimumDuration: 0.4) {
-                    if let board = currentBoard {
-                        editingBoard = board
-                    } else {
-                        editingAllFolder = true
+        // 物理シミュのボードを viewport の縦 2 倍に広げ、ScrollView(.vertical) でスクロール可能に。
+        // 床は PileDynamicsView 内の UICollisionBehavior が下端に自動配置するので、縦が広がれば
+        // 積み上がる高さも広がり、大量の本に対応できる。
+        let heightMultiplier: CGFloat = 2.0
+        return GeometryReader { geo in
+            ScrollView(.vertical, showsIndicators: false) {
+                ZStack(alignment: .top) {
+                    BoardBackgroundView(appearance: appearance)
+                        .frame(width: geo.size.width, height: geo.size.height * heightMultiplier)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .contentShape(RoundedRectangle(cornerRadius: 14))
+                        .onLongPressGesture(minimumDuration: 0.4) {
+                            if let board = currentBoard {
+                                editingBoard = board
+                            } else {
+                                editingAllFolder = true
+                            }
+                        }
+
+                    PileDynamicsView(
+                        items: pileItems,
+                        onTap: { id in router.detailBookID = id },
+                        onLongPress: { id in longPressTarget = id }
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height * heightMultiplier)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                    if pileItems.isEmpty && !viewModel.isLoading {
+                        Text(viewModel.selectedBoardID == nil
+                             ? "積読の本がありません。＋ボタンから追加してください。"
+                             : "このフォルダはまだ空です。")
+                            .font(FontToken.bodyRegular())
+                            .foregroundStyle(ColorToken.inkSecondary)
+                            .padding(.top, 40)
                     }
                 }
-
-            PileDynamicsView(
-                items: pileItems,
-                onTap: { id in router.detailBookID = id },
-                onLongPress: { id in longPressTarget = id }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-
-            if pileItems.isEmpty && !viewModel.isLoading {
-                Text(viewModel.selectedBoardID == nil
-                     ? "積読の本がありません。＋ボタンから追加してください。"
-                     : "このフォルダはまだ空です。")
-                    .font(FontToken.bodyRegular())
-                    .foregroundStyle(ColorToken.inkSecondary)
-                    .padding(.top, 40)
+                .frame(width: geo.size.width, height: geo.size.height * heightMultiplier)
             }
+            .defaultScrollAnchor(.bottom)  // 初期表示は床付近 (積み上がった頂上) を見せる
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .topLeading) { countBadge }
