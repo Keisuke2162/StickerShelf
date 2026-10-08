@@ -130,7 +130,8 @@ public struct ShelfView: View {
             let viewport = geo.size
             let canvas = CGSize(width: viewport.width * canvasMultiplier,
                                 height: viewport.height * canvasMultiplier)
-            let effectiveScale = boardScale * pinchDelta
+            // ピンチ中もスケール下限を強制して、キャンバスが viewport より小さく表示されないようにする。
+            let effectiveScale = (boardScale * pinchDelta).clamped(to: minScale...maxScale)
             // ドラッグ中もキャンバスが viewport の外に出ないよう即時クランプする。
             let maxOffsetX = max(0, (canvas.width * effectiveScale - viewport.width) / 2)
             let maxOffsetY = max(0, (canvas.height * effectiveScale - viewport.height) / 2)
