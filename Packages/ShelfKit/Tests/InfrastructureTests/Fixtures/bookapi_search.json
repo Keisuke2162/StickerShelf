@@ -1,0 +1,28 @@
+{
+  "books": [
+    {
+      "isbn13": "9784003101018",
+      "title": "こゝろ",
+      "titleKana": "ココロ",
+      "authors": ["夏目漱石"],
+      "publisher": "岩波書店",
+      "publishedDate": "1989-05",
+      "pageCount": 337,
+      "coverImageURL": "https://example.com/covers/9784003101018.jpg",
+      "price": 693,
+      "rakutenURL": "https://example.com/books/9784003101018",
+      "source": "ndl+rakuten"
+    },
+    {
+      "isbn13": "9784832203655",
+      "title": "ぼっち・ざ・ろっく!外伝廣井きくりの深酒日記 1",
+      "authors": ["くみちょう"],
+      "publisher": "芳文社",
+      "publishedDate": "2024-02",
+      "source": "ndl"
+    }
+  ],
+  "page": 1,
+  "hasMore": true,
+  "sources": { "ndl": "ok", "rakuten": "ok" }
+}

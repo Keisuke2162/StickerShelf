@@ -1,0 +1,12 @@
+{
+  "book": {
+    "isbn13": "9784832203655",
+    "title": "ぼっち・ざ・ろっく!外伝廣井きくりの深酒日記 1",
+    "authors": ["くみちょう"],
+    "publisher": "芳文社",
+    "publishedDate": "2024-02",
+    "pageCount": 174,
+    "source": "ndl"
+  },
+  "sources": { "ndl": "ok", "rakuten": "skipped" }
+}
