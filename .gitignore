@@ -21,8 +21,9 @@ xcuserdata/
 
 # Swift Package Manager
 Packages/*/.build/
-*.swiftpm/
-.swiftpm/
+.swiftpm/configuration/
+.swiftpm/xcode/xcuserdata/
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
 
 # macOS
 .DS_Store

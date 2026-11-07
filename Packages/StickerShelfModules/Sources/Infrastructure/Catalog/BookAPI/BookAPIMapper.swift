@@ -1,6 +1,6 @@
 //
 //  BookAPIMapper.swift
-//  ShelfKit
+//  Infrastructure
 //
 //  Created by Kei on 2026/11/07.
 //

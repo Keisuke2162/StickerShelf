@@ -80,11 +80,11 @@ fi
 PASSED_COUNT=$(grep -cE "Test case '.*' passed" "$LOG")
 echo "==> App スキーム: ビルド成功・テスト成功 (${PASSED_COUNT} tests)・警告ゼロ"
 
-# ShelfKit パッケージの全テストを実行（Swift Testing）
+# StickerShelfModules パッケージの全テストを実行（Swift Testing）
 PKG_LOG="$ROOT/.verify-pkg.log"
 rm -f "$PKG_LOG"
-echo "==> ShelfKit swift test"
-pushd "$ROOT/Packages/ShelfKit" > /dev/null
+echo "==> StickerShelfModules swift test"
+pushd "$ROOT/Packages/StickerShelfModules" > /dev/null
 $XCRUN swift test --no-parallel > "$PKG_LOG" 2>&1
 PKG_STATUS=$?
 popd > /dev/null
@@ -102,5 +102,5 @@ if [ "$PKG_WARN" -gt 0 ]; then
   exit 1
 fi
 
-echo "==> OK: App + ShelfKit どちらもビルド・テスト成功・警告ゼロ"
+echo "==> OK: App + StickerShelfModules どちらもビルド・テスト成功・警告ゼロ"
 exit 0
