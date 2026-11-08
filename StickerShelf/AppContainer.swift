@@ -5,7 +5,8 @@ import Application
 import Infrastructure
 import Presentation
 
-/// Composition Root。具象 Repository と UseCase を生成し PresentationContainer を組み立てる。
+/// アプリ全体の依存関係を一箇所で組み立てる Composition Root。
+/// SwiftData・各種 Repository・UseCase を生成して PresentationContainer にまとめる。
 public struct AppContainer: Sendable {
     public let presentation: PresentationContainer
     public let startupOptions: StartupOptions
@@ -14,8 +15,8 @@ public struct AppContainer: Sendable {
         let options = StartupOptions.parse(from: launchArguments)
 
         let schema = Schema([BookRecord.self, BoardRecord.self, MemoRecord.self])
-        // -SeedSampleData は「サンプルを追加投入」のためのフラグで、永続化の挙動とは切り離す。
-        // ModelContainer 失敗時はインメモリにフォールバックして起動クラッシュを回避する。
+        // SwiftData の保存先を作る。通常はディスクに永続化、作成に失敗した端末では
+        // インメモリで起動して少なくとも今セッションの利用は継続できるようにする。
         let container: ModelContainer = {
             if let normal = try? ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)]) {
                 return normal
@@ -40,19 +41,20 @@ public struct AppContainer: Sendable {
         if options.useStubCatalog {
             catalog = StubCatalogRepositoryForLaunch()
         } else {
-            let client = GoogleBooksClient(
-                session: .shared,
-                apiKeyProvider: { try? apiKeyRepository.load() },
-                bundleID: bundleID
-            )
-            catalog = GoogleBooksCatalogRepository(client: client, preferences: searchPreferences)
+          // Cloudflareworkers上のbook-api
+          let client = BookAPIClient(
+            session: .shared,
+            baseURL: URL(string: "https://book-api.kei3islands-books.workers.dev").unsafelyUnwrapped
+          )
+          catalog = BookAPICatalogRepository(client: client)
         }
 
+        // 書影はローカルのディレクトリに保存する。もしそのディレクトリを用意できない環境なら、
+        // 書影機能なし（常に .none を返す）のダミー実装で起動を続ける。
         let covers: any CoverImageRepository
         if let real = try? FileCoverImageRepository() {
             covers = real
         } else {
-            // 書影ディレクトリ作成に失敗したら「書影は表示しない（none のみ）」の縮退モードに
             covers = NullCoverImageRepository()
         }
 
@@ -94,7 +96,8 @@ public struct AppContainer: Sendable {
         )
 
         let app = AppContainer(presentation: presentation, startupOptions: options)
-        // 既定ボードが未作成なら「読んでる」「読んだ」を seed。
+        // 初回起動時や既定ボードがユーザーに削除されていた場合に備え、
+        // 「読んでる」「読んだ」が無ければ作成しておく（毎回起動時に確認）。
         Task { await ensureDefaultBoards(repository: boardRepository, books: bookRepository) }
         if options.seedSampleData {
             Task { await SampleDataSeeder.seed(into: bookRepository, boards: boardRepository) }
@@ -102,9 +105,9 @@ public struct AppContainer: Sendable {
         return app
     }
 
-    /// 既定の本棚 Board「読んでる」「読んだ」が存在することを保証する（冪等）。
-    /// 片方だけ消されたケースでも、不足分だけ補充する。
-    /// 併せて、`boardID` 未設定の `.reading` / `.finished` 本を既定ボードに割り当て直す。
+    /// 既定ボード「読んでる」「読んだ」を用意する。
+    /// 既に両方あれば何もせず、片方だけ無ければその片方だけ作る（何度呼んでも安全）。
+    /// また、まだ所属ボードが決まっていない「読書中」「読了」の本は、対応する既定ボードへ割り当てる。
     private static func ensureDefaultBoards(repository: SwiftDataBoardRepository, books: SwiftDataBookRepository) async {
         let existing = (try? await repository.fetchAll()) ?? []
         let now = Date()
@@ -154,14 +157,16 @@ public struct AppContainer: Sendable {
     }
 }
 
-/// FileCoverImageRepository 初期化に失敗したときのダミー。
+/// 書影保存ディレクトリを用意できない環境向けのフォールバック。
+/// 常に「書影なし（.none）」を返し、保存操作も何もしない。
 struct NullCoverImageRepository: CoverImageRepository {
     func imageData(for cover: CoverImage) async throws -> Data? { nil }
     func saveUserImage(_ data: Data) async throws -> CoverImage { .none }
     func deleteLocal(_ cover: CoverImage) async throws {}
 }
 
-/// Phase 4 以降で UI プレビュー・UI テストから検索を試すためのネットワーク無しスタブ。
+/// 起動引数 `-UseStubCatalog YES` で差し込むダミーの書籍検索実装。
+/// ネットワークを呼ばず固定のサンプルを返すので、UI プレビュー・UI テスト・オフライン確認に使う。
 struct StubCatalogRepositoryForLaunch: BookCatalogRepository {
     func search(keyword: String, page: Int) async throws -> CatalogSearchResult {
         let samples: [CatalogBook] = [
