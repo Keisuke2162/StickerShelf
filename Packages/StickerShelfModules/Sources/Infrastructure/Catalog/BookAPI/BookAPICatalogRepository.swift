@@ -27,8 +27,7 @@ public struct BookAPICatalogRepository: BookCatalogRepository {
     // アプリ側は0開始、API側は1開始なのでAPI用に+1する
     let apiPage = page + 1
     guard apiPage <= Self.maxPage else {
-      // 【暫定】Domain がまだ totalItems を持つため。5-11 で hasMore に置き換える
-      return CatalogSearchResult(books: [], totalItems: 0, page: page)
+      return CatalogSearchResult(books: [], hasMore: false, page: page)
     }
     // 長すぎる検索語は400になるので先に詰めておく
     let query = String(keyword.prefix(Self.maxQueryLength))

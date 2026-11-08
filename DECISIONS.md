@@ -64,3 +64,9 @@
 - 2026-11-07: `BookAPICatalogRepository.search` はアプリの 0 始まりの page を API の 1 始まりに +1 して渡す。API の上限（page 25、検索語 100 文字）を超える分はリクエストせず空結果／切り詰めで扱う。API は総件数を返さないため `totalItems` にはそのページの件数を入れる。
 - 2026-11-07: 自前APIの `catalogID` には ISBN-13 を入れる（検索結果の行の識別に使う）。ISBN の 404 は「見つからない」として nil を返し、429 は `.catalogQuotaExceeded`、5xx は `.catalogUnavailable` に変換する。Worker 側で回数を制御しているため、アプリ側のリトライは行わない。
 - 2026-11-07: マイページ →「ライセンス」に、国立国会図書館サーチ（CC BY 4.0）と楽天ウェブサービス（Supported by Rakuten Developers）のクレジットを追加。
+- 2026-11-07: 自前APIへの切り替えの動作確認後、Google Books 用の実装（クライアント・DTO・マッパー・エラーマッパー・リポジトリ）とテスト・フィクスチャ、APIキー関連（APIKey・APIKeyRepository・Keychain／Info.plist 読み込み・保存／削除／状態取得／接続テストの UseCase・マイページの「書籍検索API」節・取得方法の画面）、「日本語の本に限定」設定（SearchPreferenceRepository 一式とマイページの「検索」節）、`Secrets.example.xcconfig` を削除した。
+- 2026-11-07: `DomainError.invalidAPIKey` を削除（APIキーを持たなくなり、発生する場面がないため）。`.catalogQuotaExceeded` は自前APIの回数制限（429）を表すエラーとして残し、表示文言を「検索が混み合っています。1分ほど待ってから再度お試しください。」に変更した。
+- 2026-11-07: `BookMetadata.catalogID`（Google Books の volume id 用）と `BookRecord.catalogID` を削除。検索結果の本の識別は ISBN-13 で行う。
+- 2026-11-07: `CatalogBook` に `isbn: ISBN`（必須）と `id`（ISBN-13）を持たせ、ISBN のない本からは作れないようにした（`DomainError.invalidISBN`）。書籍検索API は ISBN-13 のある本しか返さないため。
+- 2026-11-07: `CatalogSearchResult` / `SearchCatalogOutput` の `totalItems` を `hasMore` に置き換え。書籍検索API は総件数を返さず、ページ番号で検索する作りには続きの有無が必要なため。
+- 2026-11-07: アプリは書籍検索APIの裏の取得元を意識しない方針とし、`BookAPIDTO` はアプリが使う項目（と API が付ける `source`）だけを持つ。コードのコメントにも取得元の名前を書かない（クレジット表示を除く）。

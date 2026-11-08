@@ -16,7 +16,6 @@ public final class BookRecord {
     public var pageCount: Int?
     public var isbnValue: String?
     public var remoteCoverURL: URL?
-    public var catalogID: String?
 
     public var statusRaw: String = "unread"
     public var startedAt: Date?
@@ -57,7 +56,6 @@ public final class BookRecord {
         pageCount: Int?,
         isbnValue: String?,
         remoteCoverURL: URL?,
-        catalogID: String?,
         statusRaw: String,
         startedAt: Date?,
         finishedAt: Date?,
@@ -86,7 +84,6 @@ public final class BookRecord {
         self.pageCount = pageCount
         self.isbnValue = isbnValue
         self.remoteCoverURL = remoteCoverURL
-        self.catalogID = catalogID
         self.statusRaw = statusRaw
         self.startedAt = startedAt
         self.finishedAt = finishedAt

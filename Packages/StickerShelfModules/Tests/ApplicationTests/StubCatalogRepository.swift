@@ -11,7 +11,7 @@ public final class StubCatalogRepository: BookCatalogRepository, @unchecked Send
         switch searchResult {
         case .success(let value): return value
         case .failure(let error): throw error
-        case .none: return CatalogSearchResult(books: [], totalItems: 0, page: page)
+        case .none: return CatalogSearchResult(books: [], hasMore: false, page: page)
         }
     }
 

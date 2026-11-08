@@ -19,7 +19,7 @@ enum BookAPIMapper {
     let pageCount: Int? = (dto.pageCount ?? 0) > 0 ? dto.pageCount : nil
     let coverURL: URL? = dto.coverImageURL.flatMap { URL(string: $0) }
     
-    // BookMetadataは初期化時にtitleが空, pageCountが0だとthrowする仕様なのでtry
+    // BookMetadata はタイトルが空、ページ数が 0 以下だと throw する。try? で失敗を nil にして、その本だけ外す
     guard let metadata = try? BookMetadata(
       title: dto.title,
       authors: dto.authors,
@@ -27,18 +27,14 @@ enum BookAPIMapper {
       publishedDate: dto.publishedDate,
       pageCount: pageCount,
       isbn: isbn,
-      remoteCoverURL: coverURL,
-      
-      // 【暫定】Google Books 用の項目。5-11 で catalogID 自体を消し、CatalogBook の ISBN で見分ける形に置き換える
-      catalogID: isbn.value
+      remoteCoverURL: coverURL
     ) else { return nil }
-    return CatalogBook(metadata: metadata)
+    // ISBN を渡しているので、CatalogBook の初期化は失敗しない
+    return try? CatalogBook(metadata: metadata)
   }
   
-  /// 検索結果を CatalogSearchResult にする。
-  /// 【暫定】Domain がまだ Google Books 用の totalItems を持つので、このページの件数を入れる。5-11 で hasMore に置き換える。
+  /// 検索結果を CatalogSearchResult にする。page はアプリ側の 0 始まりの値
   static func toCatalogSearchResult(_ dto: BookAPISearchResponseDTO, page: Int) -> CatalogSearchResult {
-    let books = dto.books.compactMap(toCatalogBook)
-    return CatalogSearchResult(books: books, totalItems: books.count, page: page)
+    CatalogSearchResult(books: dto.books.compactMap(toCatalogBook), hasMore: dto.hasMore, page: page)
   }
 }

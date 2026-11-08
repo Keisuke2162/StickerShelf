@@ -22,7 +22,7 @@ struct BookAPICatalogRepositoryTests {
     BookAPICatalogRepository(client: BookAPIClient(session: session, baseURL: baseURL))
   }
   
-
+  
   @Test func search_callSearchEndpoint_withOneBasePage() async throws {
     // テスト内容：キーワード検索で、API に送るリクエストが正しく組み立てられるか
     let data = try FixtureLoader.data("bookapi_search")
@@ -50,8 +50,9 @@ struct BookAPICatalogRepositoryTests {
     let session = URLSession.stubbed { _ in .init(statusCode: 200, data: data) }
     let repo = makeRepository(session: session)
     let result = try await repo.search(keyword: "こころ", page: 0)
-    // 確認：page と件数が想定どおりであること
+    // 確認：page・hasMore・件数が想定どおりであること
     #expect(result.page == 0)
+    #expect(result.hasMore == true)
     #expect(result.books.count == 2)
     
     // 確認：1冊目の各項目が、JSON の値どおりに入っていること
@@ -62,7 +63,7 @@ struct BookAPICatalogRepositoryTests {
     #expect(first.publishedDate == "1989-05")
     #expect(first.pageCount == 337)
     #expect(first.isbn?.value == "9784003101018")
-    #expect(first.catalogID == "9784003101018")
+    #expect(result.books[0].id == "9784003101018")
     #expect(first.remoteCoverURL?.absoluteString == "https://example.com/covers/9784003101018.jpg")
     
     // 確認：書影・ページ数がない本は、その項目が nil になること
@@ -77,8 +78,9 @@ struct BookAPICatalogRepositoryTests {
     let repo = makeRepository(session: session)
     // アプリの page 25 は API の page 26 で、上限（25）を超える
     let result = try await repo.search(keyword: "x", page: 25)
-    // 確認：結果が空で、リクエストが送られていないこと
+    // 確認：結果が空で hasMore が false、リクエストが送られていないこと
     #expect(result.books.isEmpty)
+    #expect(result.hasMore == false)
     #expect(StubURLProtocol.recordedRequests().isEmpty)
   }
   

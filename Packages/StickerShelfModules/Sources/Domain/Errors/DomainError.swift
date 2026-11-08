@@ -11,6 +11,5 @@ public enum DomainError: Error, Equatable, Sendable {
     case bookNotFound(BookID)
     case catalogUnavailable(reason: String)
     case catalogQuotaExceeded
-    case invalidAPIKey
     case network
 }

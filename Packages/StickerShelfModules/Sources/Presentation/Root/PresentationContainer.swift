@@ -19,10 +19,6 @@ public struct PresentationContainer: Sendable {
     public let bringToFront: any BringStickerToFrontUseCaseProtocol
     public let replaceCover: any ReplaceCoverImageUseCaseProtocol
     public let deleteBook: any DeleteBookUseCaseProtocol
-    public let saveAPIKey: any SaveAPIKeyUseCaseProtocol
-    public let deleteAPIKey: any DeleteAPIKeyUseCaseProtocol
-    public let loadAPIKeyStatus: any LoadAPIKeyStatusUseCaseProtocol
-    public let testConnection: any TestCatalogConnectionUseCaseProtocol
     public let fetchBoards: any FetchBoardsUseCaseProtocol
     public let createBoard: any CreateBoardUseCaseProtocol
     public let updateBoard: any UpdateBoardUseCaseProtocol
@@ -33,7 +29,6 @@ public struct PresentationContainer: Sendable {
     public let addMemo: any AddMemoUseCaseProtocol
     public let fetchMemos: any FetchMemosUseCaseProtocol
     public let deleteMemo: any DeleteMemoUseCaseProtocol
-    public let searchPreferences: any SearchPreferenceRepository
     public let themePreferences: any ThemePreferenceRepository
     public let coverImages: any CoverImageRepository
     public let bookChanges: @Sendable () -> AsyncStream<Void>
@@ -54,10 +49,6 @@ public struct PresentationContainer: Sendable {
         bringToFront: any BringStickerToFrontUseCaseProtocol,
         replaceCover: any ReplaceCoverImageUseCaseProtocol,
         deleteBook: any DeleteBookUseCaseProtocol,
-        saveAPIKey: any SaveAPIKeyUseCaseProtocol,
-        deleteAPIKey: any DeleteAPIKeyUseCaseProtocol,
-        loadAPIKeyStatus: any LoadAPIKeyStatusUseCaseProtocol,
-        testConnection: any TestCatalogConnectionUseCaseProtocol,
         fetchBoards: any FetchBoardsUseCaseProtocol,
         createBoard: any CreateBoardUseCaseProtocol,
         updateBoard: any UpdateBoardUseCaseProtocol,
@@ -68,7 +59,6 @@ public struct PresentationContainer: Sendable {
         addMemo: any AddMemoUseCaseProtocol,
         fetchMemos: any FetchMemosUseCaseProtocol,
         deleteMemo: any DeleteMemoUseCaseProtocol,
-        searchPreferences: any SearchPreferenceRepository,
         themePreferences: any ThemePreferenceRepository,
         coverImages: any CoverImageRepository,
         bookChanges: @escaping @Sendable () -> AsyncStream<Void>,
@@ -88,10 +78,6 @@ public struct PresentationContainer: Sendable {
         self.bringToFront = bringToFront
         self.replaceCover = replaceCover
         self.deleteBook = deleteBook
-        self.saveAPIKey = saveAPIKey
-        self.deleteAPIKey = deleteAPIKey
-        self.loadAPIKeyStatus = loadAPIKeyStatus
-        self.testConnection = testConnection
         self.fetchBoards = fetchBoards
         self.createBoard = createBoard
         self.updateBoard = updateBoard
@@ -102,7 +88,6 @@ public struct PresentationContainer: Sendable {
         self.addMemo = addMemo
         self.fetchMemos = fetchMemos
         self.deleteMemo = deleteMemo
-        self.searchPreferences = searchPreferences
         self.themePreferences = themePreferences
         self.coverImages = coverImages
         self.bookChanges = bookChanges

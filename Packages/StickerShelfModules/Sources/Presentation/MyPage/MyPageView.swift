@@ -3,17 +3,15 @@ import SwiftUI
 import Domain
 import Application
 
-/// マイページタブ。ユーザー情報（仮）と既存の設定項目をまとめて 1 画面に表示する。
+/// マイページタブ。ユーザー情報（仮）と設定項目をまとめて 1 画面に表示する。
 public struct MyPageView: View {
     private let container: PresentationContainer
     private let router: Router
-    @State private var viewModel: SettingsViewModel
     @Environment(ThemeStore.self) private var theme
 
     public init(container: PresentationContainer, router: Router) {
         self.container = container
         self.router = router
-        self._viewModel = State(initialValue: SettingsViewModel(container: container))
     }
 
     public var body: some View {
@@ -24,7 +22,6 @@ public struct MyPageView: View {
             }
             .background(theme.backgroundColor.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .task { await viewModel.reload() }
         }
     }
 
@@ -56,58 +53,6 @@ public struct MyPageView: View {
                     } label: {
                         Label("気になる本メモ", systemImage: "list.bullet.clipboard")
                     }
-                }
-
-                Section("書籍検索API") {
-                    HStack {
-                        if viewModel.isAPIKeyVisible {
-                            TextField("APIキー", text: $viewModel.apiKeyInput)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .textContentType(.password)
-                        } else {
-                            SecureField("APIキー", text: $viewModel.apiKeyInput)
-                                .textContentType(.password)
-                        }
-                        Button(action: { viewModel.isAPIKeyVisible.toggle() }) {
-                            Image(systemName: viewModel.isAPIKeyVisible ? "eye.slash" : "eye")
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(viewModel.isAPIKeyVisible ? "APIキーを隠す" : "APIキーを表示")
-                    }
-                    Button {
-                        if let s = UIPasteboard.general.string {
-                            viewModel.apiKeyInput = s.trimmingCharacters(in: .whitespacesAndNewlines)
-                        }
-                    } label: {
-                        Label("ペースト", systemImage: "doc.on.clipboard")
-                    }
-                    .buttonStyle(.borderless)
-                    .tint(ColorToken.accent)
-                    .accessibilityLabel("クリップボードから貼り付け")
-                    switch viewModel.apiKeyStatus {
-                    case .notSet:
-                        Text("未設定").font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-                    case .set(let masked):
-                        Text("現在のキー: \(masked)").font(FontToken.caption()).foregroundStyle(ColorToken.inkSecondary)
-                    }
-                    Button("保存") { Task { await viewModel.saveAPIKey() } }
-                    Button("接続テスト") { Task { await viewModel.testConnection() } }
-                    if viewModel.isTestingConnection {
-                        ProgressView()
-                    }
-                    if let result = viewModel.connectionResult {
-                        connectionLabel(for: result)
-                    }
-                    Button("削除", role: .destructive) { Task { await viewModel.deleteAPIKey() } }
-                    NavigationLink("APIキーの取得方法") { APIKeyHelpView() }
-                }
-
-                Section("検索") {
-                    Toggle("日本語の本に限定", isOn: Binding(
-                        get: { viewModel.restrictToJapanese },
-                        set: { viewModel.didToggleJapanese($0) }
-                    ))
                 }
 
                 Section("このアプリについて") {
@@ -164,24 +109,6 @@ public struct MyPageView: View {
             Spacer()
         }
         .padding(.vertical, 6)
-    }
-
-    @ViewBuilder
-    private func connectionLabel(for result: CatalogConnectionTestResult) -> some View {
-        switch result {
-        case .success:
-            Label("接続 OK", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-        case .invalidAPIKey:
-            Label("APIキーが正しくありません", systemImage: "xmark.circle.fill").foregroundStyle(ColorToken.sunday)
-        case .quotaExceeded:
-            Label("検索上限に達しました。APIキーを設定すると安定します", systemImage: "exclamationmark.triangle.fill").foregroundStyle(ColorToken.sunday)
-        case .networkUnavailable:
-            Label("インターネットに接続されていません", systemImage: "wifi.slash").foregroundStyle(ColorToken.sunday)
-        case .serviceUnavailable:
-            Label("検索サービスに接続できません", systemImage: "exclamationmark.triangle").foregroundStyle(ColorToken.sunday)
-        case .unknown:
-            Label("不明なエラー", systemImage: "questionmark.circle").foregroundStyle(ColorToken.sunday)
-        }
     }
 }
 

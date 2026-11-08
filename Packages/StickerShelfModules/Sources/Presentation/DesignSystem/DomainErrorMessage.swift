@@ -17,8 +17,7 @@ public enum DomainErrorMessage {
             case .bookNotFound: return "対象の本が見つかりませんでした。"
             case .catalogUnavailable(let reason):
                 return "検索サービスに接続できません。時間をおいて再度お試しください。\n(\(reason))"
-            case .catalogQuotaExceeded: return "検索の上限に達しました。設定で API キーを登録すると安定します。"
-            case .invalidAPIKey: return "API キーが正しくありません。設定を確認してください。"
+            case .catalogQuotaExceeded: return "検索が混み合っています。1分ほど待ってから再度お試しください。"
             case .network: return "インターネットに接続されていません。"
             }
         }

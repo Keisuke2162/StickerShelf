@@ -8,7 +8,7 @@ struct MiscUseCaseTests {
     @Test func findCatalogBookByISBN_delegatesToCatalog() async throws {
         let catalog = StubCatalogRepository()
         let meta = try BookMetadata(title: "見つけた", isbn: ISBN("9784101010014"))
-        catalog.findResult = .success(CatalogBook(metadata: meta))
+      catalog.findResult = .success(try CatalogBook(metadata: meta))
         let useCase = FindCatalogBookByISBNUseCase(catalog: catalog)
         let book = try await useCase.execute(isbn: ISBN("9784101010014")!)
         #expect(book?.metadata.title == "見つけた")
@@ -84,28 +84,5 @@ struct MiscUseCaseTests {
         #expect(try await repo.fetch(id: book.id) == nil)
         let deleted = await covers.deletedLocalFiles
         #expect(deleted.contains("img.jpg"))
-    }
-
-    @Test func testCatalogConnection_mapsErrors() async {
-        let catalog = StubCatalogRepository()
-        catalog.findResult = .failure(DomainError.invalidAPIKey)
-        var result = await TestCatalogConnectionUseCase(catalog: catalog).execute()
-        #expect(result == .invalidAPIKey)
-
-        catalog.findResult = .failure(DomainError.catalogQuotaExceeded)
-        result = await TestCatalogConnectionUseCase(catalog: catalog).execute()
-        #expect(result == .quotaExceeded)
-
-        catalog.findResult = .failure(DomainError.network)
-        result = await TestCatalogConnectionUseCase(catalog: catalog).execute()
-        #expect(result == .networkUnavailable)
-
-        catalog.findResult = .failure(DomainError.catalogUnavailable(reason: "500"))
-        result = await TestCatalogConnectionUseCase(catalog: catalog).execute()
-        #expect(result == .serviceUnavailable)
-
-        catalog.findResult = .success(nil)
-        result = await TestCatalogConnectionUseCase(catalog: catalog).execute()
-        #expect(result == .success)
     }
 }

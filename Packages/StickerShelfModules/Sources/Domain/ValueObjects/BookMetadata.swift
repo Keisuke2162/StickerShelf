@@ -8,7 +8,6 @@ public struct BookMetadata: Hashable, Sendable, Codable {
     public let pageCount: Int?
     public let isbn: ISBN?
     public let remoteCoverURL: URL?
-    public let catalogID: String?
 
     public init(
         title: String,
@@ -18,7 +17,6 @@ public struct BookMetadata: Hashable, Sendable, Codable {
         pageCount: Int? = nil,
         isbn: ISBN? = nil,
         remoteCoverURL: URL? = nil,
-        catalogID: String? = nil
     ) throws {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw DomainError.invalidTitle }
@@ -32,6 +30,5 @@ public struct BookMetadata: Hashable, Sendable, Codable {
         self.pageCount = pageCount
         self.isbn = isbn
         self.remoteCoverURL = remoteCoverURL
-        self.catalogID = catalogID
     }
 }

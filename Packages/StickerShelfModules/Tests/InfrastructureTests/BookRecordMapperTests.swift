@@ -15,7 +15,6 @@ struct BookRecordMapperTests {
             pageCount: 320,
             isbnValue: "9784101010014",
             remoteCoverURL: URL(string: "https://example.com/cover.jpg"),
-            catalogID: "cat-001",
             statusRaw: "reading",
             startedAt: Date(timeIntervalSince1970: 1_770_000_000),
             finishedAt: nil,

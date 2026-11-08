@@ -5,65 +5,65 @@ import Foundation
 
 @Suite("AddBookUseCase")
 struct AddBookUseCaseTests {
-    @Test func addsFromCatalogAsUnread() async throws {
-        let books = InMemoryBookRepository()
-        let useCase = AddBookUseCase(books: books)
-        let meta = try BookMetadata(title: "宇宙", isbn: ISBN("9784101010014"))
-        let input = AddBookInput(source: .catalog(CatalogBook(metadata: meta)), initialStatus: .unread, purchasedAt: Date(), now: Date())
-        let book = try await useCase.execute(input)
-        #expect(book.status == .unread)
-        #expect(book.sticker == nil)
-        #expect(book.purchase.purchasedAt != nil)
-        #expect(try await books.fetchAll().count == 1)
+  @Test func addsFromCatalogAsUnread() async throws {
+    let books = InMemoryBookRepository()
+    let useCase = AddBookUseCase(books: books)
+    let meta = try BookMetadata(title: "宇宙", isbn: ISBN("9784101010014"))
+    let input = AddBookInput(source: .catalog(try CatalogBook(metadata: meta)), initialStatus: .unread, purchasedAt: Date(), now: Date())
+    let book = try await useCase.execute(input)
+    #expect(book.status == .unread)
+    #expect(book.sticker == nil)
+    #expect(book.purchase.purchasedAt != nil)
+    #expect(try await books.fetchAll().count == 1)
+  }
+  
+  @Test func addsAsReading_assignsSticker_andStartedAt() async throws {
+    let books = InMemoryBookRepository()
+    let useCase = AddBookUseCase(books: books)
+    let meta = try BookMetadata(title: "宇宙", isbn: ISBN("9784101010014"))
+    let now = Date()
+    let input = AddBookInput(source: .catalog(try CatalogBook(metadata: meta)), initialStatus: .reading, purchasedAt: nil, now: now)
+    let book = try await useCase.execute(input)
+    #expect(book.status == .reading)
+    #expect(book.sticker != nil)
+    #expect(book.period.startedAt == now)
+  }
+  
+  @Test func rejectsDuplicateISBN() async throws {
+    let books = InMemoryBookRepository()
+    let useCase = AddBookUseCase(books: books)
+    let isbn = ISBN("9784101010014")!
+    let meta = try BookMetadata(title: "宇宙", isbn: isbn)
+    let input = AddBookInput(source: .catalog(try CatalogBook(metadata: meta)), initialStatus: .unread, purchasedAt: nil, now: Date())
+    _ = try await useCase.execute(input)
+    await #expect(throws: (any Error).self) {
+      _ = try await useCase.execute(input)
     }
-
-    @Test func addsAsReading_assignsSticker_andStartedAt() async throws {
-        let books = InMemoryBookRepository()
-        let useCase = AddBookUseCase(books: books)
-        let meta = try BookMetadata(title: "宇宙")
-        let now = Date()
-        let input = AddBookInput(source: .catalog(CatalogBook(metadata: meta)), initialStatus: .reading, purchasedAt: nil, now: now)
-        let book = try await useCase.execute(input)
-        #expect(book.status == .reading)
-        #expect(book.sticker != nil)
-        #expect(book.period.startedAt == now)
+  }
+  
+  @Test func addsAsUnread_withPileFolder_assignsBoardID() async throws {
+    // 2026-10-06: 修正。積読追加時にも選択したフォルダ (boardID) が反映されることを確認。
+    let books = InMemoryBookRepository()
+    let useCase = AddBookUseCase(books: books)
+    let folder = BoardID()
+    let meta = try BookMetadata(title: "積読本", isbn: ISBN("9784101010014"))
+    let input = AddBookInput(source: .catalog(try CatalogBook(metadata: meta)),
+                             initialStatus: .unread,
+                             boardID: folder,
+                             purchasedAt: nil,
+                             now: Date())
+    let book = try await useCase.execute(input)
+    #expect(book.status == .unread)
+    #expect(book.boardID == folder)
+  }
+  
+  @Test func manualEntryRequiresTitle() async throws {
+    let books = InMemoryBookRepository()
+    let useCase = AddBookUseCase(books: books)
+    let bad = AddBookInput.ManualEntry(title: "   ")
+    let input = AddBookInput(source: .manual(bad), initialStatus: .unread, purchasedAt: nil, now: Date())
+    await #expect(throws: DomainError.invalidTitle) {
+      _ = try await useCase.execute(input)
     }
-
-    @Test func rejectsDuplicateISBN() async throws {
-        let books = InMemoryBookRepository()
-        let useCase = AddBookUseCase(books: books)
-        let isbn = ISBN("9784101010014")!
-        let meta = try BookMetadata(title: "宇宙", isbn: isbn)
-        let input = AddBookInput(source: .catalog(CatalogBook(metadata: meta)), initialStatus: .unread, purchasedAt: nil, now: Date())
-        _ = try await useCase.execute(input)
-        await #expect(throws: (any Error).self) {
-            _ = try await useCase.execute(input)
-        }
-    }
-
-    @Test func addsAsUnread_withPileFolder_assignsBoardID() async throws {
-        // 2026-10-06: 修正。積読追加時にも選択したフォルダ (boardID) が反映されることを確認。
-        let books = InMemoryBookRepository()
-        let useCase = AddBookUseCase(books: books)
-        let folder = BoardID()
-        let meta = try BookMetadata(title: "積読本")
-        let input = AddBookInput(source: .catalog(CatalogBook(metadata: meta)),
-                                 initialStatus: .unread,
-                                 boardID: folder,
-                                 purchasedAt: nil,
-                                 now: Date())
-        let book = try await useCase.execute(input)
-        #expect(book.status == .unread)
-        #expect(book.boardID == folder)
-    }
-
-    @Test func manualEntryRequiresTitle() async throws {
-        let books = InMemoryBookRepository()
-        let useCase = AddBookUseCase(books: books)
-        let bad = AddBookInput.ManualEntry(title: "   ")
-        let input = AddBookInput(source: .manual(bad), initialStatus: .unread, purchasedAt: nil, now: Date())
-        await #expect(throws: DomainError.invalidTitle) {
-            _ = try await useCase.execute(input)
-        }
-    }
+  }
 }

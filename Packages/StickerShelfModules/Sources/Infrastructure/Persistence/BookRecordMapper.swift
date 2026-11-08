@@ -25,8 +25,7 @@ enum BookRecordMapper {
                 publishedDate: record.publishedDate,
                 pageCount: normalizedPage,
                 isbn: record.isbnValue.flatMap(ISBN.init),
-                remoteCoverURL: record.remoteCoverURL,
-                catalogID: record.catalogID
+                remoteCoverURL: record.remoteCoverURL
             )
         } catch {
             mapperLogger.error("Dropping record \(record.id, privacy: .public): metadata rebuild failed: \(String(describing: error), privacy: .public)")
@@ -87,7 +86,6 @@ enum BookRecordMapper {
             pageCount: book.metadata.pageCount,
             isbnValue: book.metadata.isbn?.value,
             remoteCoverURL: book.metadata.remoteCoverURL,
-            catalogID: book.metadata.catalogID,
             statusRaw: book.status.rawValue,
             startedAt: book.period.startedAt,
             finishedAt: book.period.finishedAt,
@@ -118,7 +116,6 @@ enum BookRecordMapper {
         record.pageCount = book.metadata.pageCount
         record.isbnValue = book.metadata.isbn?.value
         record.remoteCoverURL = book.metadata.remoteCoverURL
-        record.catalogID = book.metadata.catalogID
         record.statusRaw = book.status.rawValue
         record.startedAt = book.period.startedAt
         record.finishedAt = book.period.finishedAt

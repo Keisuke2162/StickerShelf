@@ -177,7 +177,7 @@ public struct AddBookView: View {
                         Spacer()
                         if item.alreadyRegistered {
                             Text("登録済み").font(FontToken.caption()).foregroundStyle(ColorToken.inkTertiary)
-                        } else if viewModel.selectedCatalog?.metadata.catalogID == item.catalog.metadata.catalogID {
+                        } else if viewModel.selectedCatalog?.id == item.catalog.id {
                             Image(systemName: "checkmark").foregroundStyle(ColorToken.accent)
                         }
                     }
@@ -185,7 +185,7 @@ public struct AddBookView: View {
                     .background(RoundedRectangle(cornerRadius: 12).fill(ColorToken.surface))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(viewModel.selectedCatalog?.metadata.catalogID == item.catalog.metadata.catalogID ? ColorToken.ink : .clear, lineWidth: 2)
+                            .stroke(viewModel.selectedCatalog?.id == item.catalog.id ? ColorToken.ink : .clear, lineWidth: 2)
                     )
                     .opacity(item.alreadyRegistered ? 0.5 : 1.0)
                 }
