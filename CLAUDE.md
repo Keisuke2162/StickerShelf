@@ -32,7 +32,7 @@ PROGRESS.md 先頭を `STATUS: BLOCKED` にし、理由と人間にやってほ�
 ## 技術ルール（詳細は Notion 03）
 - iOS 17+ / Swift 6 Strict Concurrency / SwiftUI / SwiftData / 外部ライブラリなし
 - DDD × Clean Architecture × MVVM。依存は Domain へ一方向（ローカル Swift Package のターゲットで強制）
-- コードはほぼ全てローカル Swift Package（ShelfKit）に置き、App ターゲットは @main・AppContainer・リソースだけにする。
+- コードはほぼ全てローカル Swift Package（Packages/StickerShelfModules、プロジェクト直下フォルダ参照）に置き、App ターゲットは @main・AppContainer・リソースだけにする。
   こうすると project.pbxproj をほとんど触らずに済む。XcodeGen 等の外部ツールは使わない。
   pbxproj を編集したら必ず verify.sh で xcodebuild が通ることを確認する
 - verify.sh は「ビルド＋全テスト＋Swift 6 警告ゼロ」を判定する

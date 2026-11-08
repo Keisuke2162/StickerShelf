@@ -25,7 +25,7 @@ StickerShelf/
 │  ├─ AppContainer.swift      # Composition Root
 │  └─ Assets.xcassets
 ├─ Packages/
-│  └─ ShelfKit/               # ローカル Swift Package（コードの大半）
+│  └─ StickerShelfModules/    # ローカル Swift Package（コードの大半、プロジェクト直下フォルダ参照）
 │     ├─ Sources/
 │     │  ├─ Domain/           # 集約・値オブジェクト・ドメインサービス・リポジトリ契約
 │     │  ├─ Application/      # UseCase 17 本

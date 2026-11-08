@@ -34,6 +34,7 @@
 		67341B81306F78FA00D7FB7A /* StickerShelf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StickerShelf.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67341B90306F78FB00D7FB7A /* StickerShelfTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StickerShelfTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		67341B9A306F78FB00D7FB7A /* StickerShelfUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StickerShelfUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		67A0B10010000000000000A1 /* StickerShelfModules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StickerShelfModules; path = Packages/StickerShelfModules; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -83,6 +84,7 @@
 				67341B83306F78FA00D7FB7A /* StickerShelf */,
 				67341B93306F78FB00D7FB7A /* StickerShelfTests */,
 				67341B9D306F78FB00D7FB7A /* StickerShelfUITests */,
+				67A0B10010000000000000A0 /* Packages */,
 				67341B82306F78FA00D7FB7A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -100,6 +102,7 @@
 		67A0B10010000000000000A0 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				67A0B10010000000000000A1 /* StickerShelfModules */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -207,9 +210,6 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 67341B82306F78FA00D7FB7A /* Products */;
-			packageReferences = (
-				67A0B100100000000000000A /* XCLocalSwiftPackageReference "Packages/ShelfKit" */,
-			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -219,13 +219,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		67A0B100100000000000000A /* XCLocalSwiftPackageReference "Packages/ShelfKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/ShelfKit;
-		};
-/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		67A0B1001000000000000002 /* Presentation */ = {

@@ -1,6 +1,6 @@
 //
 //  BookAPICatalogRepositoryTests.swift
-//  ShelfKit
+//  InfrastructureTests
 //
 //  Created by Kei on 2026/11/08.
 //
@@ -26,7 +26,7 @@ struct BookAPICatalogRepositoryTests {
   @Test func search_callSearchEndpoint_withOneBasePage() async throws {
     // テスト内容：キーワード検索で、API に送るリクエストが正しく組み立てられるか
     let data = try FixtureLoader.data("bookapi_search")
-    let session - URLSession.stubbed { _ in .init(statusCode: 200, data: data) }
+    let session = URLSession.stubbed { _ in .init(statusCode: 200, data: data) }
     let repo = makeRepository(session: session)
     _ = try await repo.search(keyword: "夏目漱石", page: 0)
     // Stub側で保持してるリクエストの記録を取り出し（正しいリクエストかどうかのテストを行うため）
@@ -35,10 +35,12 @@ struct BookAPICatalogRepositoryTests {
     // 確認：リクエストが1回だけ送られ、パス・q・page（アプリの0 → APIの1）・User-Agent が想定どおりであること
     #expect(seen.count == 1)
     // resolvingAgainstBaseURL：相対URLなら基準URLと組み合わせてから分解するか（今回は絶対URLなので影響なし）
-    let components = URLComponents(url: seen[0].url, resolvingAgainstBaseURL: false)
-    #expect(components.path == "/v1/books/search")
-    #expect(components.queryItems?.contains(where: { $0.name == "q" && $0.value == "夏目漱石" }) == true)
-    #expect(components.queryItems?.contains(where: { $0.name == "page" && $0.value == "1" }) == true)
+    let url = try #require(seen[0].url)
+    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    let queryItems = components?.queryItems ?? []
+    #expect(components?.path == "/v1/books/search")
+    #expect(queryItems.contains(where: { $0.name == "q" && $0.value == "夏目漱石" }))
+    #expect(queryItems.contains(where: { $0.name == "page" && $0.value == "1" }))
     #expect(seen[0].value(forHTTPHeaderField: "User-Agent") == "StickerShelf/1.0 iOS")
   }
   

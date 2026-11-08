@@ -2,11 +2,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "ShelfKit",
+    name: "StickerShelfModules",
     defaultLocalization: "ja",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        .library(name: "ShelfKit", targets: ["Presentation", "Infrastructure", "Application", "Domain"]),
         .library(name: "Domain", targets: ["Domain"]),
         .library(name: "Application", targets: ["Application"]),
         .library(name: "Infrastructure", targets: ["Infrastructure"]),
